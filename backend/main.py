@@ -50,8 +50,8 @@ async def startup():
             db.add(chef)
             db.commit()
             print("Compte admin cree : admin@smc.app / ChangeMe2025!")
-        finally:
-            db.close()
+    finally:
+        db.close()
 
 @app.get("/")
 def root():

@@ -15,7 +15,7 @@ export default function Maquette3D() {
     setLoading(true)
     setSelected(null)
     // Charge tous les lots d'un coup
-    api.get(`/elements/?projet_id=${projetActif.id}`)
+    api.get(`/api/elements/?projet_id=${projetActif.id}`)
       .then(r => setElements(r.data))
       .finally(() => setLoading(false))
   }, [projetActif?.id])

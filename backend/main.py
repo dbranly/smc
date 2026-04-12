@@ -5,13 +5,13 @@ import os
 
 app = FastAPI(title="SMC API", version="3.0.0")
 
-ALLOWED = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173")
-origins = [o.strip() for o in ALLOWED.split(",")]
-origins += ["http://localhost:5173", "http://localhost:4173"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "https://dbranly.github.io",
+        "http://localhost:5173",
+        "http://localhost:4173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,9 +33,8 @@ app.include_router(rapport.router,      prefix="/api/rapport",      tags=["Rappo
 
 @app.on_event("startup")
 async def startup():
-    from database import engine
+    from database import engine, SessionLocal
     from auth import hash_password
-    from database import SessionLocal
     models.Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -49,7 +48,7 @@ async def startup():
             )
             db.add(chef)
             db.commit()
-            print("Compte admin cree : admin@smc.app / ChangeMe2025!")
+            print("✅ Compte admin créé : admin@smc.app / ChangeMe2025!")
     finally:
         db.close()
 

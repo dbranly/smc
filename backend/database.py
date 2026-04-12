@@ -14,7 +14,7 @@ import os
 # 4. ./smc_v2.db     (local dev)
 
 if os.environ.get("DATABASE_URL"):
-    DB_PATH = os.environ["DATABASE_URL"]
+    DB_PATH = os.environ["DATABASE_URL"
 elif os.path.isdir("/data"):
     DB_PATH = "sqlite:////data/smc_v2.db"
 elif os.path.isdir("/tmp"):

@@ -105,7 +105,7 @@ export default function Utilisateurs() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await api.get('/users/')
+      const res = await api.get('/api/users/')
       setUsers(res.data)
     } finally { setLoading(false) }
   }
@@ -113,24 +113,24 @@ export default function Utilisateurs() {
   useEffect(() => { load() }, [])
 
   const handleCreate = async (form) => {
-    await api.post('/users/', form)
+    await api.post('/api/users/', form)
     load()
   }
 
   const handleUpdate = async (form) => {
     const payload = { ...form }
     if (!payload.password) delete payload.password
-    await api.put(`/users/${editUser.id}`, payload)
+    await api.put(`/api/users/${editUser.id}`, payload)
     load()
   }
 
   const handleToggleActif = async (user) => {
-    await api.put(`/users/${user.id}`, { actif: !user.actif })
+    await api.put(`/api/users/${user.id}`, { actif: !user.actif })
     load()
   }
 
   const handleDelete = async () => {
-    await api.delete(`/users/${confirmDel.id}`)
+    await api.delete(`/api/users/${confirmDel.id}`)
     setConfirmDel(null); load()
   }
 

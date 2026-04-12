@@ -2,20 +2,23 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
-import tempfile
 
-# Debug
-print("TMP dir:", tempfile.gettempdir())
-print("TMP exists:", os.path.isdir("/tmp"))
-print("TMP writable:", os.access("/tmp", os.W_OK))
-
-DB_PATH = "sqlite:////tmp/smc_v2.db"
-print("DB_PATH:", DB_PATH)
-
-engine = create_engine(
-    DB_PATH,
-    connect_args={"check_same_thread": False}
+# Production : PostgreSQL Supabase
+# Développement local : SQLite
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///./smc_v2.db"  # fallback local
 )
+
+# SQLite en local, PostgreSQL sur Render
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

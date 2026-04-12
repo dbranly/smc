@@ -9,19 +9,19 @@ export function AuthProvider({ children }) {
     return u ? JSON.parse(u) : null
   })
 
-  const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password })
-    localStorage.setItem('token', res.data.access_token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
-    setUser(res.data.user)
-    return res.data.user
-  }
+const login = async (email, password) => {
+  const res = await api.post('/api/auth/login', { email, password })
+  localStorage.setItem('smc_token', res.data.access_token)  // ← smc_token
+  localStorage.setItem('user', JSON.stringify(res.data.user))
+  setUser(res.data.user)
+  return res.data.user
+}
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
-  }
+const logout = () => {
+  localStorage.removeItem('smc_token')  // ← smc_token
+  localStorage.removeItem('user')
+  setUser(null)
+}
 
   return (
     <AuthContext.Provider value={{

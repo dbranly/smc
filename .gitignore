@@ -1,0 +1,6 @@
+backend/data/
+backend/venv/
+backend/__pycache__/
+backend/routers/__pycache__/
+*.pyc
+*.db

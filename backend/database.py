@@ -2,25 +2,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+import tempfile
 
-# Priorité :
+# Debug
+print("TMP dir:", tempfile.gettempdir())
+print("TMP exists:", os.path.isdir("/tmp"))
+print("TMP writable:", os.access("/tmp", os.W_OK))
 
-# 1. Variable d’env DATABASE_URL si définie
-
-# 2. /data/smc_v2.db si le dossier existe (volume Render payant)
-
-# 3. /tmp/smc_v2.db  (Render free — éphémère mais fonctionnel)
-
-# 4. ./smc_v2.db     (local dev)
-
-if os.environ.get("DATABASE_URL"):
-    DB_PATH = os.environ["DATABASE_URL"]
-elif os.path.isdir("/data"):
-    DB_PATH = "sqlite:////data/smc_v2.db"
-elif os.path.isdir("/tmp"):
-    DB_PATH = "sqlite:////tmp/smc_v2.db"
-else:
-    DB_PATH = "sqlite:///./smc_v2.db"
+DB_PATH = "sqlite:////tmp/smc_v2.db"
+print("DB_PATH:", DB_PATH)
 
 engine = create_engine(
     DB_PATH,

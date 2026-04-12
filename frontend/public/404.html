@@ -3,15 +3,8 @@
 <head>
   <meta charset="utf-8">
   <script>
-    var l = window.location;
-    l.replace(
-      l.protocol + '//' + l.hostname +
-      (l.port ? ':' + l.port : '') +
-      '/smc/' +
-      '?p=/' + l.pathname.slice(1) +
-      (l.search ? '&q=' + l.search.slice(1) : '') +
-      l.hash
-    );
+    sessionStorage.redirect = location.href;
+    location.replace('https://dbranly.github.io/smc/');
   </script>
 </head>
 <body></body>

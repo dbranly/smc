@@ -23,7 +23,7 @@ else:
     DB_PATH = "sqlite:///./smc_v2.db"
 
 engine = create_engine(
-DB_PATH,
+    DB_PATH,
     connect_args={"check_same_thread": False}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -76,10 +76,10 @@ export default function Fondations() {
   const load = async () => {
     if (!projetActif) return
     setLoading(true)
-    const res = await api.get(`/elements/?projet_id=${projetActif.id}&lot=Fondations`)
+    const res = await api.get(`/api/elements/?projet_id=${projetActif.id}&lot=Fondations`)
     setElements(res.data)
     // Charger aussi les éléments gros oeuvre pour vue 3D combinée
-    const resGO = await api.get(`/elements/?projet_id=${projetActif.id}&lot=Gros%20%C5%93uvre`)
+    const resGO = await api.get(`/api/elements/?projet_id=${projetActif.id}&lot=Gros%20%C5%93uvre`)
     setExtraElements(resGO.data)
     setLoading(false)
   }
@@ -92,7 +92,7 @@ export default function Fondations() {
 
   const selectElement = async (e) => {
     setSelected(e); setEditing(false); setEditVals({})
-    const [m, c] = await Promise.all([api.get(`/mesures/${e.id}`), api.get(`/commentaires/${e.id}`)])
+    const [m, c] = await Promise.all([api.get(`/api/mesures/${e.id}`), api.get(`/api/commentaires/${e.id}`)])
     setMesures(m.data); setComments(c.data)
   }
 
@@ -109,8 +109,8 @@ export default function Fondations() {
     setSaving(true)
     const payload = {}
     Object.entries(editVals).forEach(([k,v]) => { if (v !== '') payload[k] = isNaN(v) ? v : (Number(v) || v) })
-    await api.put(`/elements/${selected.id}`, payload)
-    const updated = await api.get(`/elements/${selected.id}`)
+    await api.put(`/api/elements/${selected.id}`, payload)
+    const updated = await api.get(`/api/elements/${selected.id}`)
     setSelected(updated.data); setEditing(false); setEditVals({}); setSaving(false); load()
   }
 
@@ -118,7 +118,7 @@ export default function Fondations() {
     e.preventDefault()
     const payload = { projet_id: projetActif.id, lot: 'Fondations' }
     Object.entries(newForm).forEach(([k,v]) => { if (v !== '') payload[k] = isNaN(v) ? v : (Number(v) || v) })
-    await api.post('/elements/', payload)
+    await api.post('/api/elements/', payload)
     setShowForm(false); setNewForm(EMPTY_FORM); load()
   }
 
@@ -126,36 +126,36 @@ export default function Fondations() {
     e.preventDefault()
     const payload = { element_id: selected.id }
     Object.entries(mesureForm).forEach(([k,v]) => { if (v !== '') payload[k] = isNaN(v) ? v : (Number(v) || v) })
-    await api.post('/mesures/', payload)
-    const m = await api.get(`/mesures/${selected.id}`)
+    await api.post('/api/mesures/', payload)
+    const m = await api.get(`/api/mesures/${selected.id}`)
     setMesures(m.data); setShowMesureForm(false)
   }
 
   const handleSoumettre = async () => {
-    await api.post(`/elements/${selected.id}/soumettre`)
-    const u = await api.get(`/elements/${selected.id}`); setSelected(u.data); load()
+    await api.post(`/api/elements/${selected.id}/soumettre`)
+    const u = await api.get(`/api/elements/${selected.id}`); setSelected(u.data); load()
   }
   const handleValider = async () => {
-    await api.post(`/elements/${selected.id}/valider`, { action: 'valider' })
-    const u = await api.get(`/elements/${selected.id}`); setSelected(u.data); load()
+    await api.post(`/api/elements/${selected.id}/valider`, { action: 'valider' })
+    const u = await api.get(`/api/elements/${selected.id}`); setSelected(u.data); load()
   }
   const handleRejeter = async () => {
     if (!rejetMsg.trim()) return
-    await api.post(`/elements/${selected.id}/valider`, { action: 'rejeter', commentaire: rejetMsg })
-    const u = await api.get(`/elements/${selected.id}`)
+    await api.post(`/api/elements/${selected.id}/valider`, { action: 'rejeter', commentaire: rejetMsg })
+    const u = await api.get(`/api/elements/${selected.id}`)
     setSelected(u.data); setShowRejet(false); setRejetMsg(''); load()
   }
   const handleComment = async () => {
     if (!newComment.trim()) return
-    await api.post('/commentaires/', { element_id: selected.id, texte: newComment })
-    const c = await api.get(`/commentaires/${selected.id}`); setComments(c.data); setNewComment('')
+    await api.post('/api/commentaires/', { element_id: selected.id, texte: newComment })
+    const c = await api.get(`/api/commentaires/${selected.id}`); setComments(c.data); setNewComment('')
   }
   const handleImport = async (e) => {
     const file = e.target.files[0]; if (!file) return
     setImporting(true); setImportResult(null)
     const fd = new FormData(); fd.append('file', file)
     try {
-      const res = await api.post(`/elements/import/excel?projet_id=${projetActif.id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const res = await api.post(`/api/elements/import/excel?projet_id=${projetActif.id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       setImportResult({ success: true, ...res.data }); load()
     } catch (err) {
       setImportResult({ success: false, message: err.response?.data?.detail || 'Erreur import' })
@@ -163,7 +163,7 @@ export default function Fondations() {
   }
   const handleExportDXF = async () => {
     try {
-      const res = await api.get(`/elements/export/dxf/${projetActif?.id}`, { responseType: 'blob' })
+      const res = await api.get(`/api/elements/export/dxf/${projetActif?.id}`, { responseType: 'blob' })
       const url = URL.createObjectURL(new Blob([res.data]))
       const a = document.createElement('a'); a.href = url
       a.download = `pieux_${projetActif?.nom?.replace(/\s+/g,'_')}.dxf`

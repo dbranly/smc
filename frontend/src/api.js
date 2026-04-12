@@ -3,7 +3,7 @@ import axios from 'axios'
 // En production (GitHub Pages) → API Render
 // En développement (localhost) → proxy Vite vers localhost:8001
 const BASE_URL = import.meta.env.PROD
-  ? 'https://smc-api.onrender.com'
+  ? 'https://smc-cpd8.onrender.com'
   : ''
 
 const api = axios.create({

@@ -10,9 +10,9 @@
     <title>SMC APP</title>
     <script>
       (function() {
-        const p = new URLSearchParams(window.location.search).get('p');
+        var p = new URLSearchParams(window.location.search).get('p');
         if (p) {
-          window.history.replaceState(null, '', '/smc' + decodeURIComponent(p));
+          window.history.replaceState(null, '', p);
         }
       })();
     </script>

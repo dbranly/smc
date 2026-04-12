@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './AuthContext'
 import { ProjetProvider } from './ProjetContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -14,7 +14,7 @@ import Utilisateurs from './pages/Utilisateurs'
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={
@@ -24,16 +24,16 @@ export default function App() {
               </ProjetProvider>
             </ProtectedRoute>
           }>
-            <Route index          element={<Dashboard />} />
+            <Route index              element={<Dashboard />} />
             <Route path="fondations"  element={<Fondations />} />
             <Route path="gros-oeuvre" element={<GrosOeuvre />} />
             <Route path="finitions"   element={<Finitions />} />
-            <Route path="maquette-3d"   element={<Maquette3D />} />
-            <Route path="utilisateurs"  element={<Utilisateurs />} />
+            <Route path="maquette-3d" element={<Maquette3D />} />
+            <Route path="utilisateurs" element={<Utilisateurs />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   )
 }

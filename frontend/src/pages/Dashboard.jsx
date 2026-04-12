@@ -98,11 +98,11 @@ export default function Dashboard() {
       if (filtreType) params.append('type_element', filtreType)
 
       const [k, c, pf, al, sw] = await Promise.all([
-        api.get(`/analytics/kpis/${projetActif.id}`),
-        api.get(`/analytics/courbe-volumes/${projetActif.id}?${params}`),
-        api.get(`/analytics/volumes-par-famille/${projetActif.id}`),
-        api.get(`/analytics/alertes/${projetActif.id}`),
-        api.get(`/analytics/avancement-semaines/${projetActif.id}`),
+        api.get(`/api/analytics/kpis/${projetActif.id}`),
+        api.get(`/api/analytics/courbe-volumes/${projetActif.id}?${params}`),
+        api.get(`/api/analytics/volumes-par-famille/${projetActif.id}`),
+        api.get(`/api/analytics/alertes/${projetActif.id}`),
+        api.get(`/api/analytics/avancement-semaines/${projetActif.id}`),
       ])
       setKpis(k.data); setCourbe(c.data); setParFamille(pf.data)
       setAlertes(al.data); setSemaines(sw.data)
@@ -115,7 +115,7 @@ export default function Dashboard() {
 
   const handleDownloadPDF = async () => {
     try {
-      const res = await api.get(`/rapport/${projetActif.id}`, { responseType: 'blob' })
+      const res = await api.get(`/api/rapport/${projetActif.id}`, { responseType: 'blob' })
       const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
       const a = document.createElement('a')
       a.href = url

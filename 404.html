@@ -7,7 +7,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/smc/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>SMC APP</title>
+    <script>
+      (function() {
+        const p = new URLSearchParams(window.location.search).get('p');
+        if (p) {
+          window.history.replaceState(null, '', '/smc' + decodeURIComponent(p));
+        }
+      })();
+    </script>
     <script type="module" crossorigin src="/smc/assets/index-DN9aWwbI.js"></script>
     <link rel="modulepreload" crossorigin href="/smc/assets/with-selector-YZc7EtlW.js">
     <link rel="stylesheet" crossorigin href="/smc/assets/index-C9gos6nb.css">

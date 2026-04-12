@@ -3,17 +3,15 @@
 <head>
   <meta charset="utf-8">
   <script>
-    // Redirige vers index.html en gardant le chemin
-    const path = window.location.pathname;
-    const search = window.location.search;
-    const hash = window.location.hash;
-    const base = '/smc';
-    
-    // Encode le chemin dans le query string pour le récupérer dans index.html
-    const redirect = base + '/?p=' + encodeURIComponent(
-      path.replace(base, '') + search + hash
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname +
+      (l.port ? ':' + l.port : '') +
+      '/smc/' +
+      '?p=/' + l.pathname.slice(1) +
+      (l.search ? '&q=' + l.search.slice(1) : '') +
+      l.hash
     );
-    window.location.replace(redirect);
   </script>
 </head>
 <body></body>

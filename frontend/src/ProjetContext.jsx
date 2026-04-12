@@ -1,18 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from './api'
-
 const ProjetContext = createContext(null)
-
 export function ProjetProvider({ children }) {
-  const [projets, setProjets]       = useState([])
+  const [projets, setProjets]         = useState([])
   const [projetActif, setProjetActif] = useState(null)
-  const [loading, setLoading]       = useState(true)
-
+  const [loading, setLoading]         = useState(true)
   const loadProjets = async () => {
     try {
-      const res = await api.get('/projets/')
+      const res = await api.get('/api/projets/')
       setProjets(res.data)
-      // Restaure le dernier projet sélectionné depuis localStorage
       const saved = localStorage.getItem('projet_actif_id')
       if (saved) {
         const found = res.data.find(p => p.id === parseInt(saved))
@@ -25,35 +21,29 @@ export function ProjetProvider({ children }) {
       setLoading(false)
     }
   }
-
   useEffect(() => { loadProjets() }, [])
-
   const selectProjet = (projet) => {
     setProjetActif(projet)
     localStorage.setItem('projet_actif_id', projet.id)
   }
-
   const createProjet = async (data) => {
-    const res = await api.post('/projets/', data)
+    const res = await api.post('/api/projets/', data)
     await loadProjets()
     selectProjet(res.data)
     return res.data
   }
-
   const updateProjet = async (id, data) => {
-    await api.put(`/projets/${id}`, data)
+    await api.put(`/api/projets/${id}`, data)
     await loadProjets()
   }
-
   const deleteProjet = async (id) => {
-    await api.delete(`/projets/${id}`)
-    const res = await api.get('/projets/')
+    await api.delete(`/api/projets/${id}`)
+    const res = await api.get('/api/projets/')
     setProjets(res.data)
     if (projetActif?.id === id) {
       setProjetActif(res.data[0] || null)
     }
   }
-
   return (
     <ProjetContext.Provider value={{
       projets, projetActif, loading,
@@ -64,5 +54,4 @@ export function ProjetProvider({ children }) {
     </ProjetContext.Provider>
   )
 }
-
 export const useProjet = () => useContext(ProjetContext)

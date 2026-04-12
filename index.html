@@ -10,9 +10,10 @@
     <title>SMC APP</title>
     <script>
       (function() {
-        var p = new URLSearchParams(window.location.search).get('p');
-        if (p) {
-          window.history.replaceState(null, '', p);
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
         }
       })();
     </script>

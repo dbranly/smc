@@ -66,35 +66,69 @@ class ElementCreate(BaseModel):
     lot: LotEnum = LotEnum.fondations
     type_element: TypeElementEnum
     famille: Optional[str] = None
+
+    # Coordonnées théoriques (plan)
     coord_x: Optional[float] = None
     coord_y: Optional[float] = None
     coord_z: Optional[float] = None
+
+    # Coordonnées virole (réelles mesurées)
+    coord_virole_x: Optional[float] = None   # VIROLE_X
+    coord_virole_y: Optional[float] = None   # VIROLE_Y
+    coord_virole_z: Optional[float] = None   # VIROLE_Z
+
+    # Terrain naturel
+    altitude_tn: Optional[float] = None      # TN altitude
+
+    # Cotes
+    cote_plancher: Optional[float] = None    # COTE_PLANCHER
+    cote_recepee: Optional[float] = None     # COTE_RECEPEE
+    cote_bs_theorique: Optional[float] = None
+    cote_bs_reelle: Optional[float] = None
+    cote_bi_theorique: Optional[float] = None
+    cote_bi_reelle: Optional[float] = None
+
+    # Profondeurs rocher
+    prof_toit_rocheux: Optional[float] = None  # PROF_TOIT_ROCHEUX
+    prof_roche: Optional[float] = None          # PROF_ROCHE
+    ancrage: Optional[float] = None             # ANCRAGE
+
+    # Dimensions
     diametre: Optional[float] = None
     largeur: Optional[float] = None
     longueur: Optional[float] = None
     hauteur: Optional[float] = None
     epaisseur: Optional[float] = None
-    cote_bs_theorique: Optional[float] = None
-    cote_bs_reelle: Optional[float] = None
-    cote_bi_theorique: Optional[float] = None
-    cote_bi_reelle: Optional[float] = None
     longueur_theorique: Optional[float] = None
     longueur_reelle: Optional[float] = None
-    # Nouveaux
-    altitude_tn: Optional[float] = None
+
+    # Volumes
+    volume_budgetise: Optional[float] = None
+    volume_fore: Optional[float] = None        # VOLUME_BETON
+    volume_recepé: Optional[float] = None
+    volume_final: Optional[float] = None
+
+    # Sol
     altitude_plateforme: Optional[float] = None
     type_sol: Optional[str] = None
     description_sol: Optional[str] = None
+
+    # Charges
     charge_admissible_calc: Optional[float] = None
     charge_admissible_mesure: Optional[float] = None
     charge_appliquee: Optional[float] = None
-    # Volumes
-    volume_budgetise: Optional[float] = None
-    volume_fore: Optional[float] = None
-    volume_recepé: Optional[float] = None
-    volume_final: Optional[float] = None
+
+    # Matériaux
     materiau: Optional[str] = None
     armature: Optional[str] = None
+
+    # Liaisons
+    semelle_ref: Optional[str] = None   # SEMELLE
+    poteau_ref: Optional[str] = None    # POTEAU
+
+    # Date forage
+    date_forage: Optional[datetime] = None  # DATE
+
     statut_element: Optional[StatutPieuEnum] = StatutPieuEnum.a_faire
 
 class ElementUpdate(ElementCreate):
@@ -110,36 +144,70 @@ class ElementOut(BaseModel):
     lot: LotEnum
     type_element: TypeElementEnum
     famille: Optional[str]
+
+    # Coordonnées
     coord_x: Optional[float]
     coord_y: Optional[float]
     coord_z: Optional[float]
+    coord_virole_x: Optional[float]
+    coord_virole_y: Optional[float]
+    coord_virole_z: Optional[float]
+    altitude_tn: Optional[float]
+
+    # Cotes
+    cote_plancher: Optional[float]
+    cote_recepee: Optional[float]
+    cote_bs_theorique: Optional[float]
+    cote_bs_reelle: Optional[float]
+    cote_bi_theorique: Optional[float]
+    cote_bi_reelle: Optional[float]
+
+    # Profondeurs
+    prof_toit_rocheux: Optional[float]
+    prof_roche: Optional[float]
+    ancrage: Optional[float]
+
+    # Dimensions
     diametre: Optional[float]
     largeur: Optional[float]
     longueur: Optional[float]
     hauteur: Optional[float]
     epaisseur: Optional[float]
-    cote_bs_theorique: Optional[float]
-    cote_bs_reelle: Optional[float]
-    cote_bi_theorique: Optional[float]
-    cote_bi_reelle: Optional[float]
     longueur_theorique: Optional[float]
     longueur_reelle: Optional[float]
-    altitude_tn: Optional[float]
-    altitude_plateforme: Optional[float]
-    type_sol: Optional[str]
-    description_sol: Optional[str]
-    charge_admissible_calc: Optional[float]
-    charge_admissible_mesure: Optional[float]
-    charge_appliquee: Optional[float]
+
+    # Volumes
     volume_budgetise: Optional[float]
     volume_fore: Optional[float]
     volume_recepé: Optional[float]
     volume_final: Optional[float]
+
+    # Sol
+    altitude_plateforme: Optional[float]
+    type_sol: Optional[str]
+    description_sol: Optional[str]
+
+    # Charges
+    charge_admissible_calc: Optional[float]
+    charge_admissible_mesure: Optional[float]
+    charge_appliquee: Optional[float]
+
+    # Matériaux
     materiau: Optional[str]
     armature: Optional[str]
+
+    # Liaisons
+    semelle_ref: Optional[str]
+    poteau_ref: Optional[str]
+
+    # Date forage
+    date_forage: Optional[datetime]
+
+    # Statuts
     statut_element: StatutPieuEnum
     statut_validation: StatutEnum
     commentaire_rejet: Optional[str]
+
     created_at: datetime
     updated_at: Optional[datetime]
     class Config: from_attributes = True

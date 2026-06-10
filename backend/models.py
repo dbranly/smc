@@ -36,11 +36,13 @@ class TypeElementEnum(str, enum.Enum):
     autre     = "Autre"
 
 class StatutPieuEnum(str, enum.Enum):
-    a_faire = "À faire"
+    a_faire  = "À faire"
     en_cours = "En cours"
-    fore    = "Foré"
-    recepé  = "Recépé"
-    valide  = "Validé"
+    fore     = "Foré"
+    recepé   = "Recépé"
+    valide   = "Validé"
+    coule    = "Coulé"
+    decoffre = "Décoffré"
 
 class TypeSolEnum(str, enum.Enum):
     argile          = "Argile"
@@ -73,22 +75,17 @@ class User(Base):
 # ── Projet ───────────────────────────────────────────────────────
 class Projet(Base):
     __tablename__ = "projets"
-    id          = Column(Integer, primary_key=True, index=True)
-    nom         = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    localisation= Column(String, nullable=True)
-    client      = Column(String, nullable=True)
-
-    # Altitudes globales du site
-    altitude_tn_global          = Column(Float, nullable=True)  # Terrain Naturel global (m NGF)
-    altitude_plateforme_global  = Column(Float, nullable=True)  # Plateforme après décapage (m NGF)
-
-    # Sol global
-    type_sol_global     = Column(String, nullable=True)   # Description géologique globale
-    rapport_sol         = Column(Text, nullable=True)     # Synthèse géotechnique
-
-    created_at  = Column(DateTime(timezone=True), server_default=func.now())
-    elements    = relationship("Element", back_populates="projet", cascade="all, delete")
+    id                         = Column(Integer, primary_key=True, index=True)
+    nom                        = Column(String, nullable=False)
+    description                = Column(Text, nullable=True)
+    localisation               = Column(String, nullable=True)
+    client                     = Column(String, nullable=True)
+    altitude_tn_global         = Column(Float, nullable=True)
+    altitude_plateforme_global = Column(Float, nullable=True)
+    type_sol_global            = Column(String, nullable=True)
+    rapport_sol                = Column(Text, nullable=True)
+    created_at                 = Column(DateTime(timezone=True), server_default=func.now())
+    elements                   = relationship("Element", back_populates="projet", cascade="all, delete")
 
 # ── Element ──────────────────────────────────────────────────────
 class Element(Base):
@@ -100,17 +97,22 @@ class Element(Base):
     type_element     = Column(Enum(TypeElementEnum), nullable=False)
     famille          = Column(String, nullable=True)
 
-    # Géométrie
-    coord_x          = Column(Float, nullable=True)
-    coord_y          = Column(Float, nullable=True)
-    coord_z          = Column(Float, nullable=True)
-    diametre         = Column(Float, nullable=True)
-    largeur          = Column(Float, nullable=True)
-    longueur         = Column(Float, nullable=True)
-    hauteur          = Column(Float, nullable=True)
-    epaisseur        = Column(Float, nullable=True)
+    # ── Coordonnées théoriques (plan d'implantation) ──────────────
+    coord_x          = Column(Float, nullable=True)   # X théorique
+    coord_y          = Column(Float, nullable=True)   # Y théorique
+    coord_z          = Column(Float, nullable=True)   # Z théorique
 
-    # Cotes
+    # ── Coordonnées virole (réelles mesurées sur site) ────────────
+    coord_virole_x   = Column(Float, nullable=True)   # VIROLE_X
+    coord_virole_y   = Column(Float, nullable=True)   # VIROLE_Y
+    coord_virole_z   = Column(Float, nullable=True)   # VIROLE_Z = altitude virole (m NGF)
+
+    # ── Terrain naturel ───────────────────────────────────────────
+    altitude_tn      = Column(Float, nullable=True)   # TN altitude locale
+
+    # ── Cotes ─────────────────────────────────────────────────────
+    cote_plancher       = Column(Float, nullable=True)  # COTE_PLANCHER
+    cote_recepee        = Column(Float, nullable=True)  # COTE_RECEPEE à atteindre
     cote_bs_theorique   = Column(Float, nullable=True)
     cote_bs_reelle      = Column(Float, nullable=True)
     cote_bi_theorique   = Column(Float, nullable=True)
@@ -118,64 +120,81 @@ class Element(Base):
     longueur_theorique  = Column(Float, nullable=True)
     longueur_reelle     = Column(Float, nullable=True)
 
-    # ── NOUVEAUX : Altitudes TN / Plateforme ──────────────────────
-    altitude_tn             = Column(Float, nullable=True)   # TN local (surcharge projet)
-    altitude_plateforme     = Column(Float, nullable=True)   # Plateforme locale
+    # ── Profondeurs rocher ────────────────────────────────────────
+    prof_toit_rocheux = Column(Float, nullable=True)   # PROF_TOIT_ROCHEUX (m)
+    prof_roche        = Column(Float, nullable=True)   # PROF_ROCHE totale (m)
+    ancrage           = Column(Float, nullable=True)   # ANCRAGE = prof_roche - prof_toit
 
-    # ── NOUVEAUX : Sol simple ─────────────────────────────────────
-    type_sol                = Column(String, nullable=True)  # Description libre
-    description_sol         = Column(Text, nullable=True)    # Notes géotechniques
+    # ── Dimensions géométriques ───────────────────────────────────
+    diametre         = Column(Float, nullable=True)
+    largeur          = Column(Float, nullable=True)
+    longueur         = Column(Float, nullable=True)
+    hauteur          = Column(Float, nullable=True)
+    epaisseur        = Column(Float, nullable=True)
 
-    # ── NOUVEAUX : Charges ────────────────────────────────────────
-    charge_admissible_calc  = Column(Float, nullable=True)   # Calculée (kN)
-    charge_admissible_mesure= Column(Float, nullable=True)   # Mesurée essai (kN)
-    charge_appliquee        = Column(Float, nullable=True)   # Charge réelle (kN)
+    # ── Volumes ───────────────────────────────────────────────────
+    volume_budgetise = Column(Float, nullable=True)   # Volume béton budgétisé (m³)
+    volume_fore      = Column(Float, nullable=True)   # VOLUME_BETON réel (m³)
+    volume_recepé    = Column(Float, nullable=True)   # Volume après recépage (m³)
+    volume_final     = Column(Float, nullable=True)   # Volume final retenu (m³)
 
-    # Volumes
-    volume_budgetise = Column(Float, nullable=True)
-    volume_fore      = Column(Float, nullable=True)
-    volume_recepé    = Column(Float, nullable=True)
-    volume_final     = Column(Float, nullable=True)
+    # ── Sol ───────────────────────────────────────────────────────
+    altitude_plateforme    = Column(Float, nullable=True)
+    type_sol               = Column(String, nullable=True)
+    description_sol        = Column(Text, nullable=True)
 
-    # Matériaux
-    materiau         = Column(String, nullable=True)
-    armature         = Column(String, nullable=True)
+    # ── Charges ───────────────────────────────────────────────────
+    charge_admissible_calc   = Column(Float, nullable=True)
+    charge_admissible_mesure = Column(Float, nullable=True)
+    charge_appliquee         = Column(Float, nullable=True)
 
-    # Statuts
-    statut_element   = Column(Enum(StatutPieuEnum), default=StatutPieuEnum.a_faire)
-    statut_validation= Column(Enum(StatutEnum), default=StatutEnum.brouillon)
-    commentaire_rejet= Column(Text, nullable=True)
+    # ── Matériaux ─────────────────────────────────────────────────
+    materiau  = Column(String, nullable=True)
+    armature  = Column(String, nullable=True)
 
-    # Méta
-    created_at   = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
-    createur_id  = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # ── Liaisons (références directes depuis Excel) ───────────────
+    semelle_ref = Column(String, nullable=True)   # SEMELLE
+    poteau_ref  = Column(String, nullable=True)   # POTEAU
 
-    # Relations
+    # ── Date forage ───────────────────────────────────────────────
+    date_forage = Column(DateTime(timezone=True), nullable=True)  # DATE
+
+    # ── Statuts ───────────────────────────────────────────────────
+    statut_element    = Column(Enum(StatutPieuEnum), default=StatutPieuEnum.a_faire)
+    statut_validation = Column(Enum(StatutEnum), default=StatutEnum.brouillon)
+    commentaire_rejet = Column(Text, nullable=True)
+
+    # ── Métadonnées ───────────────────────────────────────────────
+    created_at  = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at  = Column(DateTime(timezone=True), onupdate=func.now())
+    createur_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    # ── Relations ─────────────────────────────────────────────────
     projet       = relationship("Projet", back_populates="elements")
-    mesures      = relationship("MesureElement", back_populates="element", cascade="all, delete", order_by="MesureElement.date_mesure")
+    mesures      = relationship("MesureElement", back_populates="element", cascade="all, delete",
+                                order_by="MesureElement.date_mesure")
     commentaires = relationship("Commentaire", back_populates="element", cascade="all, delete")
-    couches_geo  = relationship("CoucheGeo", back_populates="element", cascade="all, delete", order_by="CoucheGeo.profondeur_top")
+    couches_geo  = relationship("CoucheGeo", back_populates="element", cascade="all, delete",
+                                order_by="CoucheGeo.profondeur_top")
+    liaisons_pieu    = relationship("LiaisonStructurelle", foreign_keys="LiaisonStructurelle.pieu_id",
+                                    back_populates="pieu",    cascade="all, delete")
+    liaisons_semelle = relationship("LiaisonStructurelle", foreign_keys="LiaisonStructurelle.semelle_id",
+                                    back_populates="semelle", cascade="all, delete")
+    liaisons_poteau  = relationship("LiaisonStructurelle", foreign_keys="LiaisonStructurelle.poteau_id",
+                                    back_populates="poteau",  cascade="all, delete")
 
-    # Liaisons structurelles (en tant que pieu)
-    liaisons_pieu    = relationship("LiaisonStructurelle", foreign_keys="LiaisonStructurelle.pieu_id",    back_populates="pieu",    cascade="all, delete")
-    # Liaisons structurelles (en tant que semelle)
-    liaisons_semelle = relationship("LiaisonStructurelle", foreign_keys="LiaisonStructurelle.semelle_id", back_populates="semelle", cascade="all, delete")
-    # Liaisons structurelles (en tant que poteau)
-    liaisons_poteau  = relationship("LiaisonStructurelle", foreign_keys="LiaisonStructurelle.poteau_id",  back_populates="poteau",  cascade="all, delete")
-
-# ── CoucheGeo (sol détaillé par couche) ──────────────────────────
+# ── CoucheGeo ────────────────────────────────────────────────────
 class CoucheGeo(Base):
     __tablename__ = "couches_geo"
     id               = Column(Integer, primary_key=True, index=True)
     element_id       = Column(Integer, ForeignKey("elements.id"), nullable=False)
-    profondeur_top   = Column(Float, nullable=False)   # Cote haute (ex: -1.0 m)
-    profondeur_bottom= Column(Float, nullable=False)   # Cote basse  (ex: -3.5 m)
-    type_sol         = Column(String, nullable=False)  # Type de sol
-    description      = Column(Text, nullable=True)     # Description libre
-    resistance_spt   = Column(Float, nullable=True)    # Nombre de coups SPT
-    cohesion_cu      = Column(Float, nullable=True)    # Cohésion non drainée (kPa)
-    angle_frottement = Column(Float, nullable=True)    # Angle de frottement (°)
+    profondeur_top   = Column(Float, nullable=False)
+    profondeur_bottom= Column(Float, nullable=False)
+    type_sol         = Column(String, nullable=False)
+    description      = Column(Text, nullable=True)
+    resistance_spt   = Column(Float, nullable=True)
+    cohesion_cu      = Column(Float, nullable=True)
+    angle_frottement = Column(Float, nullable=True)
     created_at       = Column(DateTime(timezone=True), server_default=func.now())
     element          = relationship("Element", back_populates="couches_geo")
 
@@ -186,13 +205,11 @@ class LiaisonStructurelle(Base):
     pieu_id     = Column(Integer, ForeignKey("elements.id"), nullable=False)
     semelle_id  = Column(Integer, ForeignKey("elements.id"), nullable=False)
     poteau_id   = Column(Integer, ForeignKey("elements.id"), nullable=True)
-    ordre       = Column(Integer, default=1)   # Position du pieu dans la semelle
+    ordre       = Column(Integer, default=1)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
-
     pieu    = relationship("Element", foreign_keys=[pieu_id],    back_populates="liaisons_pieu")
     semelle = relationship("Element", foreign_keys=[semelle_id], back_populates="liaisons_semelle")
     poteau  = relationship("Element", foreign_keys=[poteau_id],  back_populates="liaisons_poteau")
-
     __table_args__ = (
         UniqueConstraint("pieu_id", "semelle_id", name="uq_pieu_semelle"),
     )
@@ -200,21 +217,21 @@ class LiaisonStructurelle(Base):
 # ── MesureElement ────────────────────────────────────────────────
 class MesureElement(Base):
     __tablename__ = "mesures_elements"
-    id                = Column(Integer, primary_key=True, index=True)
-    element_id        = Column(Integer, ForeignKey("elements.id"), nullable=False)
-    operateur_id      = Column(Integer, ForeignKey("users.id"), nullable=True)
-    date_mesure       = Column(DateTime(timezone=True), nullable=False)
-    phase             = Column(String, nullable=True)
-    cote_tete         = Column(Float, nullable=True)
-    cote_pied         = Column(Float, nullable=True)
-    longueur_mesuree  = Column(Float, nullable=True)
-    volume_fore       = Column(Float, nullable=True)
-    volume_recepé     = Column(Float, nullable=True)
-    volume_net        = Column(Float, nullable=True)
-    commentaire       = Column(Text, nullable=True)
-    created_at        = Column(DateTime(timezone=True), server_default=func.now())
-    element           = relationship("Element", back_populates="mesures")
-    operateur         = relationship("User", back_populates="mesures")
+    id               = Column(Integer, primary_key=True, index=True)
+    element_id       = Column(Integer, ForeignKey("elements.id"), nullable=False)
+    operateur_id     = Column(Integer, ForeignKey("users.id"), nullable=True)
+    date_mesure      = Column(DateTime(timezone=True), nullable=False)
+    phase            = Column(String, nullable=True)
+    cote_tete        = Column(Float, nullable=True)
+    cote_pied        = Column(Float, nullable=True)
+    longueur_mesuree = Column(Float, nullable=True)
+    volume_fore      = Column(Float, nullable=True)
+    volume_recepé    = Column(Float, nullable=True)
+    volume_net       = Column(Float, nullable=True)
+    commentaire      = Column(Text, nullable=True)
+    created_at       = Column(DateTime(timezone=True), server_default=func.now())
+    element          = relationship("Element", back_populates="mesures")
+    operateur        = relationship("User", back_populates="mesures")
 
 # ── Commentaire ──────────────────────────────────────────────────
 class Commentaire(Base):

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from 'react'
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Html, GizmoHelper, GizmoViewcube, Grid } from '@react-three/drei'
 
@@ -60,11 +60,11 @@ function ElementMesh({ element, position, selected, onClick, showLabels, colorBy
 
   // ── PIEU : cylindre vertical enfoncé dans le sol ──────────────────
   if (type === 'Pieu') {
-    const r  = (element.diametre || 800) / 2000
-    const bs = element.cote_bs_theorique ?? 0
-    const bi = element.cote_bi_theorique ?? (bs - 1.2)
-    const h  = Math.abs(bi - bs)
-    const yC = bi + h / 2
+    const r    = (element.diametre || 800) / 2000
+    // Utiliser prof_roche si disponible, sinon cotes théoriques
+    const prof = element.prof_roche || Math.abs((element.cote_bi_theorique ?? -1.2) - (element.cote_bs_theorique ?? 0)) || 1.2
+    const h    = prof
+    const yC   = -h / 2  // centré sous le sol (y=0)
     return (
       <group position={[position.x, yC, position.z]} {...handlers}>
         <mesh ref={meshRef} castShadow receiveShadow>
@@ -305,6 +305,17 @@ function Axes({ size }) {
   </group>
 }
 
+function CameraReset({ size, triggerReset }) {
+  const { camera, controls } = useThree()
+  useEffect(() => {
+    if (!triggerReset) return
+    camera.position.set(size*0.55, size*0.45, size*0.75)
+    camera.lookAt(0, 0, 0)
+    if (controls) { controls.target.set(0, 0, 0); controls.update() }
+  }, [triggerReset])
+  return null
+}
+
 function CameraInit({ size }) {
   const { camera } = useThree()
   useEffect(() => { camera.position.set(size*0.55, size*0.45, size*0.75); camera.lookAt(0,0,0) }, [size])
@@ -312,7 +323,7 @@ function CameraInit({ size }) {
 }
 
 // ── Scène ─────────────────────────────────────────────────────────
-function Scene({ visibleElements, selected, onSelect, showLabels, colorBy, showSol, size, cx, cz }) {
+function Scene({ visibleElements, selected, onSelect, showLabels, colorBy, showSol, size, cx, cz, triggerReset }) {
   const toPos = e => ({ x: e.coord_x - cx, z: e.coord_y - cz })
   return (
     <>
@@ -336,6 +347,7 @@ function Scene({ visibleElements, selected, onSelect, showLabels, colorBy, showS
           faces={['DROITE','GAUCHE','HAUT','BAS','AVANT','ARRIÈRE']} />
       </GizmoHelper>
       <CameraInit size={size} />
+      <CameraReset size={size} triggerReset={triggerReset} />
     </>
   )
 }
@@ -388,6 +400,7 @@ export default function Vue3D({ elements, selected, onSelect, colorBy = 'statut'
   const [showLabels, setShowLabels] = useState(false)
   const [showSol,    setShowSol]    = useState(true)
   const [colorMode,  setColorMode]  = useState(colorBy)
+  const [resetTrigger, setResetTrigger] = useState(0)
 
   // Tous les éléments fusionnés
   const allElements = useMemo(() => {
@@ -479,7 +492,7 @@ export default function Vue3D({ elements, selected, onSelect, colorBy = 'statut'
       <Canvas shadows gl={{ antialias: true }} style={{ background: '#f8fafc' }}>
         <Scene visibleElements={visibleElements} selected={selected} onSelect={onSelect}
           showLabels={showLabels} colorBy={colorMode} showSol={showSol}
-          size={size} cx={cx} cz={cz} />
+          size={size} cx={cx} cz={cz} triggerReset={resetTrigger} />
       </Canvas>
 
       {/* Checklist hiérarchique */}
@@ -495,6 +508,10 @@ export default function Vue3D({ elements, selected, onSelect, colorBy = 'statut'
           <button onClick={() => setShowSol(v => !v)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border shadow-sm transition-colors ${showSol ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
             Sol
+          </button>
+          <button onClick={() => setResetTrigger(v => v + 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border shadow-sm transition-colors bg-white text-slate-600 border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600">
+            ⌖ Recentrer
           </button>
         </div>
       </div>

@@ -631,12 +631,14 @@ export default function DetailTabs({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Onglets */}
-      <div className="flex border-b border-slate-100 px-3 pt-2 overflow-x-auto flex-shrink-0">
+      <div className="flex themed-border border-b px-3 pt-2 overflow-x-auto flex-shrink-0">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-2.5 py-2 text-xs font-medium border-b-2 transition-colors mr-0.5 whitespace-nowrap ${
-              tab === t.id ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}>
+            className={`px-2.5 py-2 text-xs font-semibold border-b-2 transition-all cursor-pointer mr-0.5 whitespace-nowrap`}
+            style={{
+              borderColor: tab === t.id ? 'var(--accent)' : 'transparent',
+              color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
+            }}>
             {t.label}
           </button>
         ))}
@@ -648,16 +650,20 @@ export default function DetailTabs({
         {tab === 'donnees' && (
           <>
             {editing && (
-              <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-                Mode édition — cliquez ✓ pour enregistrer
+              <div className="px-3 py-2 rounded-xl text-xs" style={{ background: 'var(--accent-soft)', color: 'var(--text-accent)', border: '1px solid var(--border-focus)' }}>
+                ✏️ Mode édition — cliquez ✓ Sauver pour enregistrer
               </div>
             )}
             <Section label="Géométrie">
               <Grid2>
                 <F label="Diamètre" field="diametre" unit="mm" type="number" value={selected.diametre ? `Ø${selected.diametre}mm` : null} {...{editing, editVals, onEditChange}} />
                 <F label="Famille"  field="famille"            value={selected.famille} {...{editing, editVals, onEditChange}} />
-                <F label="Coord X"  field="coord_x"  type="number" value={selected.coord_x} {...{editing, editVals, onEditChange}} />
-                <F label="Coord Y"  field="coord_y"  type="number" value={selected.coord_y} {...{editing, editVals, onEditChange}} />
+                <F label="Coord X théo."   field="coord_x"         type="number" value={selected.coord_x}         {...{editing, editVals, onEditChange}} />
+                <F label="Coord Y théo."   field="coord_y"         type="number" value={selected.coord_y}         {...{editing, editVals, onEditChange}} />
+                <F label="Virole X"        field="coord_virole_x"  type="number" value={selected.coord_virole_x}  {...{editing, editVals, onEditChange}} />
+                <F label="Virole Y"        field="coord_virole_y"  type="number" value={selected.coord_virole_y}  {...{editing, editVals, onEditChange}} />
+                <F label="Altitude virole" field="coord_virole_z"  type="number" value={selected.coord_virole_z}  {...{editing, editVals, onEditChange}} />
+                <F label="Semelle"         field="semelle_ref"                   value={selected.semelle_ref}      {...{editing, editVals, onEditChange}} />
               </Grid2>
             </Section>
             <Section label="Cotes (m)">
@@ -669,6 +675,21 @@ export default function DetailTabs({
                 <F label="L. théorique" field="longueur_theorique" type="number" value={selected.longueur_theorique} {...{editing, editVals, onEditChange}} />
                 <F label="L. réelle"    field="longueur_reelle"    type="number" value={selected.longueur_reelle}    {...{editing, editVals, onEditChange}} />
               </Grid2>
+            </Section>
+            <Section label="Forage">
+              <Grid2>
+                <F label="Cote plancher"      field="cote_plancher"      type="number" value={selected.cote_plancher}      {...{editing, editVals, onEditChange}} />
+                <F label="Cote recépée"       field="cote_recepee"       type="number" value={selected.cote_recepee}       {...{editing, editVals, onEditChange}} />
+                <F label="Prof. toit rocher"  field="prof_toit_rocheux"  type="number" value={selected.prof_toit_rocheux}  {...{editing, editVals, onEditChange}} />
+                <F label="Prof. roche totale" field="prof_roche"         type="number" value={selected.prof_roche}         {...{editing, editVals, onEditChange}} />
+                <F label="Ancrage (m)"        field="ancrage"            type="number" value={selected.ancrage}            {...{editing, editVals, onEditChange}} />
+                <F label="Altitude TN"        field="altitude_tn"        type="number" value={selected.altitude_tn}        {...{editing, editVals, onEditChange}} />
+              </Grid2>
+              {selected.date_forage && (
+                <div className="mt-2 px-3 py-2 rounded-xl text-xs themed-secondary" style={{ background: 'var(--bg-hover)' }}>
+                  📅 Foré le {new Date(selected.date_forage).toLocaleDateString('fr-FR')}
+                </div>
+              )}
             </Section>
             <Section label="Volumes (m³)">
               <Grid2>
@@ -854,7 +875,7 @@ export default function DetailTabs({
 function Section({ label, children }) {
   return (
     <div>
-      <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">{label}</div>
+      <div className="text-xs font-semibold themed-muted uppercase tracking-wider mb-2">{label}</div>
       {children}
     </div>
   )
@@ -862,21 +883,21 @@ function Section({ label, children }) {
 function Grid2({ children }) {
   return <div className="grid grid-cols-2 gap-2">{children}</div>
 }
-function F({ label, field, value, edit, editing, editVals, onChange, onEditChange,  type = 'text', unit = '' }) {
+function F({ label, field, value, edit, editing, editVals, onChange, onEditChange, type = 'text', unit = '' }) {
   const isEdit = edit || editing
   const handleChange = onChange || onEditChange
   if (!isEdit) return (
-    <div className="bg-slate-50 rounded-lg p-3">
-      <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">{label}</div>
-      <div className="text-sm font-medium text-slate-800">{value ?? '—'}</div>
+    <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
+      <div className="text-xs themed-muted uppercase tracking-wide mb-1">{label}</div>
+      <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{value ?? '—'}</div>
     </div>
   )
   return (
-    <div className="bg-white border border-blue-200 rounded-lg p-3">
-      <div className="text-xs text-blue-500 uppercase tracking-wide mb-1">{label}{unit ? ` (${unit})` : ''}</div>
+    <div className="rounded-xl p-3 border" style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)' }}>
+      <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-accent)' }}>{label}{unit ? ` (${unit})` : ''}</div>
       <input type={type} step={type==='number'?'0.001':undefined} value={editVals[field]??''}
         onChange={e => handleChange(field, e.target.value)}
-        className="w-full text-sm font-medium text-slate-800 bg-transparent border-none outline-none p-0" placeholder="—" />
+        className="w-full text-sm font-semibold bg-transparent border-none outline-none p-0" style={{ color: 'var(--text-primary)' }} placeholder="—" />
     </div>
   )
 }

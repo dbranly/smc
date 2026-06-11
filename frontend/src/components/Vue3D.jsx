@@ -21,7 +21,7 @@ const LOT_COLORS = {
 }
 
 // ── Rendu 3D par type ─────────────────────────────────────────────
-function ElementMesh({ element, position, selected, onClick, showLabels, colorBy }) {
+function ElementMesh({ element, position, selected, onClick, showLabels, colorBy, size }) {
   const meshRef = useRef()
   const [hovered, setHovered] = useState(false)
   const type = element.type_element
@@ -60,11 +60,14 @@ function ElementMesh({ element, position, selected, onClick, showLabels, colorBy
 
   // ── PIEU : cylindre vertical enfoncé dans le sol ──────────────────
   if (type === 'Pieu') {
-    const r    = (element.diametre || 800) / 2000
-    // Utiliser prof_roche si disponible, sinon cotes théoriques
-    const prof = element.prof_roche || Math.abs((element.cote_bi_theorique ?? -1.2) - (element.cote_bs_theorique ?? 0)) || 1.2
-    const h    = prof
-    const yC   = -h / 2  // centré sous le sol (y=0)
+    // Rayon : diamètre réel (0.4m) mais minimum 2% de la scène pour rester visible
+    const rReal = (element.diametre || 800) / 2000
+    const r     = Math.max(rReal, size * 0.018)
+    // Profondeur : utiliser prof_roche si disponible
+    const prof  = element.prof_roche || Math.abs((element.cote_bi_theorique ?? -1.2) - (element.cote_bs_theorique ?? 0)) || 1.2
+    // Hauteur min = 15% de size pour rester visible
+    const h     = Math.max(prof, size * 0.15)
+    const yC    = -h / 2  // centré sous le sol (y=0)
     return (
       <group position={[position.x, yC, position.z]} {...handlers}>
         <mesh ref={meshRef} castShadow receiveShadow>
@@ -338,7 +341,7 @@ function Scene({ visibleElements, selected, onSelect, showLabels, colorBy, showS
       {visibleElements.map(e => (
         <ElementMesh key={e.id} element={e} position={toPos(e)}
           selected={selected?.id === e.id} onClick={onSelect}
-          showLabels={showLabels} colorBy={colorBy} />
+          showLabels={showLabels} colorBy={colorBy} size={size} />
       ))}
       <OrbitControls makeDefault enableDamping dampingFactor={0.06}
         minDistance={0.5} maxDistance={size*5} target={[0,0,0]} />

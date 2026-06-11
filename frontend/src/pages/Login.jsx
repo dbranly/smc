@@ -138,7 +138,7 @@ export default function Login() {
               {[
                 { role: 'Chef de mission',    email: 'chef@smc.com',   pw: 'chef123'  },
                 { role: 'Ing. Suivi',         email: 'suivi@smc.com',  pw: 'suivi123' },
-                { role: "Maître d'ouvrage",   email: 'moa@smc.com',    pw: 'moa123'   },
+                { role: "Rachelle SIMO",   email: 'admin@smc.app',    pw: 'ChangeMe2025!'   },
               ].map(d => (
                 <button key={d.email} onClick={() => setForm({ email: d.email, password: d.pw })}
                   className="w-full flex items-center justify-between px-3 py-2 rounded-lg themed-hover transition-all cursor-pointer text-left">

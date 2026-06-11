@@ -4,12 +4,23 @@ import { OrbitControls, Html, GizmoHelper, GizmoViewcube, Grid } from '@react-th
 
 // ── Couleurs ──────────────────────────────────────────────────────
 const STATUT_COLORS = {
-  'À faire':'#94a3b8','En cours':'#3b82f6','Foré':'#f59e0b',
-  'Recépé':'#10b981','Validé':'#16a34a','Coulé':'#f59e0b','Décoffré':'#10b981',
+  'À faire': '#cbd5e1',   // gris clair — pas commencé
+  'En cours':'#60a5fa',   // bleu — en cours
+  'Foré':    '#f97316',   // orange vif — foré
+  'Recépé':  '#a855f7',   // violet — recépé (bien distinct de Foré)
+  'Validé':  '#22c55e',   // vert vif — validé
+  'Coulé':   '#fbbf24',   // jaune — coulé
+  'Décoffré':'#34d399',   // vert menthe — décoffré
 }
-const FAMILLE_COLORS = {
-  F1:'#6366f1',F2:'#ec4899',F3:'#f97316',F4:'#14b8a6',
-  F5:'#8b5cf6',F6:'#ef4444',F7:'#06b6d4',F8:'#64748b',F9:'#a16207',
+// Couleurs pour groupes semelle (générées dynamiquement dans le composant)
+const SEMELLE_PALETTE = [
+  '#6366f1','#ec4899','#f97316','#14b8a6','#8b5cf6',
+  '#ef4444','#06b6d4','#64748b','#a16207','#0ea5e9',
+  '#84cc16','#f43f5e','#a78bfa','#fb923c','#2dd4bf',
+]
+function getSemelleColor(semelleRef, semelleIndex) {
+  if (!semelleRef || semelleRef === '/') return '#94a3b8'
+  return SEMELLE_PALETTE[semelleIndex % SEMELLE_PALETTE.length]
 }
 const TYPE_COLORS = {
   Pieu:'#64748b', Semelle:'#b45309', Longrine:'#92400e',
@@ -26,8 +37,8 @@ function ElementMesh({ element, position, selected, onClick, showLabels, colorBy
   const [hovered, setHovered] = useState(false)
   const type = element.type_element
 
-  const baseColor = colorBy === 'famille'
-    ? (FAMILLE_COLORS[element.famille] || '#94a3b8')
+  const baseColor = colorBy === 'semelle'
+    ? getSemelleColor(element.semelle_ref, element._semelleIndex ?? 0)
     : colorBy === 'type'
     ? (TYPE_COLORS[type] || '#94a3b8')
     : (STATUT_COLORS[element.statut_element] || '#94a3b8')
@@ -465,12 +476,31 @@ export default function Vue3D({ elements, selected, onSelect, colorBy = 'statut'
     }))
   }
 
+  // Calculer l'index de semelle pour la palette de couleurs
+  const semelleIndexMap = useMemo(() => {
+    const map = {}
+    let idx = 0
+    withCoords.forEach(e => {
+      const ref = e.semelle_ref
+      if (ref && ref !== '/' && !(ref in map)) {
+        map[ref] = idx++
+      }
+    })
+    return map
+  }, [withCoords])
+
+  // Enrichir les éléments avec l'index semelle
+  const enrichedElements = useMemo(() => withCoords.map(e => ({
+    ...e,
+    _semelleIndex: semelleIndexMap[e.semelle_ref] ?? 0
+  })), [withCoords, semelleIndexMap])
+
   // Éléments visibles selon checklist
-  const visibleElements = useMemo(() => withCoords.filter(e => {
+  const visibleElements = useMemo(() => enrichedElements.filter(e => {
     const lot  = e.lot || 'Fondations'
     const type = e.type_element
     return checked[lot]?.[type] ?? true
-  }), [withCoords, checked])
+  }), [enrichedElements, checked])
 
   // Calcul bounds pour centrage
   const { size, cx, cz } = useMemo(() => {
@@ -522,7 +552,7 @@ export default function Vue3D({ elements, selected, onSelect, colorBy = 'statut'
       {/* Mode couleur */}
       <div className="absolute top-3 right-24 bg-white border border-slate-200 rounded-lg p-2 shadow-sm">
         <div className="text-xs font-medium text-slate-400 mb-1.5">Couleur</div>
-        {[['statut','Statut'],['famille','Famille'],['type','Type']].map(([v,l]) => (
+        {[['statut','Statut'],['semelle','Groupe semelle'],['type','Type']].map(([v,l]) => (
           <label key={v} className="flex items-center gap-2 cursor-pointer mb-1 last:mb-0">
             <input type="radio" name="colorMode" value={v} checked={colorMode===v}
               onChange={() => setColorMode(v)} className="w-3 h-3 cursor-pointer" />
@@ -536,12 +566,15 @@ export default function Vue3D({ elements, selected, onSelect, colorBy = 'statut'
               <span className="text-xs text-slate-500">{k}</span>
             </div>
           ))}
-          {colorMode === 'famille' && Object.entries(FAMILLE_COLORS).map(([k,c]) => (
-            <div key={k} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{background:c}}/>
-              <span className="text-xs text-slate-500">{k}</span>
+          {colorMode === 'semelle' && Object.entries(semelleIndexMap).slice(0,10).map(([ref, idx]) => (
+            <div key={ref} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{background: SEMELLE_PALETTE[idx % SEMELLE_PALETTE.length]}}/>
+              <span className="text-xs text-slate-500">{ref}</span>
             </div>
           ))}
+          {colorMode === 'semelle' && Object.keys(semelleIndexMap).length === 0 && (
+            <div className="text-xs text-slate-400">Aucune semelle associée</div>
+          )}
           {colorMode === 'type' && Object.entries(TYPE_COLORS).map(([k,c]) => (
             <div key={k} className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full" style={{background:c}}/>

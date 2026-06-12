@@ -80,7 +80,8 @@ export default function Dashboard() {
   const [semelles, setSemelles] = useState(null)
   const [loading, setLoading] = useState(true)
   const [prixM3, setPrixM3]   = useState(150000)
-  const [periode, setPeriode] = useState('semaine') // 'semaine' | 'mois' | 'tout'
+  const [dateDebut, setDateDebut] = useState('')
+  const [dateFin, setDateFin]     = useState('')
 
   useEffect(() => {
     if (!projetActif) return

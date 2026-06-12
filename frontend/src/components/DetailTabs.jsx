@@ -657,7 +657,7 @@ export default function DetailTabs({
             <Section label="Géométrie">
               <Grid2>
                 <F label="Diamètre" field="diametre" unit="mm" type="number" value={selected.diametre ? `Ø${selected.diametre}mm` : null} {...{editing, editVals, onEditChange}} />
-                <F label="Famille"  field="famille"            value={selected.famille} {...{editing, editVals, onEditChange}} />
+                <F label="Poteau"   field="poteau_ref"            value={selected.poteau_ref} {...{editing, editVals, onEditChange}} />
                 <F label="Coord X théo."   field="coord_x"         type="number" value={selected.coord_x}         {...{editing, editVals, onEditChange}} />
                 <F label="Coord Y théo."   field="coord_y"         type="number" value={selected.coord_y}         {...{editing, editVals, onEditChange}} />
                 <F label="Virole X"        field="coord_virole_x"  type="number" value={selected.coord_virole_x}  {...{editing, editVals, onEditChange}} />

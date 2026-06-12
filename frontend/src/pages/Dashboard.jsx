@@ -99,7 +99,7 @@ export default function Dashboard() {
         sem.jours?.forEach(j => {
           pts.push({
             date: j.date,
-            jour: `${j.jour} ${j.date?.slice(8,10)}/${j.date?.slice(5,7)}`,
+            jour: `${j.jour} ${j.date?.slice(8,10)}/${j.date?.slice(5,7)}/${j.date?.slice(2,4)}`,
             reel: j.reel, prevu: j.prevu,
             cumul_reel: j.cumul_reel, cumul_prevu: j.cumul_prevu,
             cumul_volume: j.cumul_volume, cumul_cout: j.cumul_cout,
@@ -113,13 +113,38 @@ export default function Dashboard() {
     }).finally(() => setLoading(false))
   }, [projetActif, prixM3])
 
-  // Filtrer la courbe selon la période choisie
+  // Bornes disponibles dans les données
+  const minDate = courbeAll[0]?.date || ''
+  const maxDate = courbeAll[courbeAll.length - 1]?.date || ''
+
+  // Initialiser dateDebut/dateFin sur la dernière semaine dès que les données arrivent
+  useEffect(() => {
+    if (courbeAll.length && !dateDebut && !dateFin) {
+      const last7 = courbeAll.slice(-7)
+      setDateDebut(last7[0]?.date || minDate)
+      setDateFin(maxDate)
+    }
+  }, [courbeAll])
+
+  // Filtrer la courbe selon la plage de dates choisie
   const courbe = (() => {
     if (!courbeAll.length) return []
-    if (periode === 'tout') return courbeAll
-    const n = periode === 'semaine' ? 7 : 30
-    return courbeAll.slice(-n)
+    if (!dateDebut && !dateFin) return courbeAll
+    return courbeAll.filter(p => {
+      if (dateDebut && p.date < dateDebut) return false
+      if (dateFin && p.date > dateFin) return false
+      return true
+    })
   })()
+
+  // Raccourcis de période
+  const setRange = (n) => {
+    if (n === 'tout') { setDateDebut(minDate); setDateFin(maxDate); return }
+    const all = courbeAll
+    const slice = all.slice(-n)
+    setDateDebut(slice[0]?.date || minDate)
+    setDateFin(maxDate)
+  }
 
   const lastPoint = courbeAll[courbeAll.length - 1]
 
@@ -265,13 +290,26 @@ export default function Dashboard() {
               <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Activité — cumul</h2>
               <p className="text-xs themed-muted mt-0.5">Pieux réalisés vs prévus · cumul Jeu → Mer</p>
             </div>
-            <div className="flex rounded-lg overflow-hidden themed-border border">
-              {[['semaine','7j'],['mois','30j'],['tout','Tout']].map(([v,l]) => (
-                <button key={v} onClick={() => setPeriode(v)}
-                  className={`px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${periode === v ? 'themed-active' : 'themed-hover themed-secondary'}`}>
-                  {l}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Raccourcis */}
+              <div className="flex rounded-lg overflow-hidden themed-border border">
+                {[[7,'7j'],[30,'30j'],['tout','Tout']].map(([v,l]) => (
+                  <button key={l} onClick={() => setRange(v)}
+                    className="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer themed-hover themed-secondary">
+                    {l}
+                  </button>
+                ))}
+              </div>
+              {/* Sélecteur de plage de dates */}
+              <div className="flex items-center gap-1.5">
+                <input type="date" value={dateDebut} min={minDate} max={dateFin || maxDate}
+                  onChange={e => setDateDebut(e.target.value)}
+                  className="themed-input px-2 py-1.5 border rounded-lg text-xs cursor-pointer" />
+                <span className="themed-muted text-xs">→</span>
+                <input type="date" value={dateFin} min={dateDebut || minDate} max={maxDate}
+                  onChange={e => setDateFin(e.target.value)}
+                  className="themed-input px-2 py-1.5 border rounded-lg text-xs cursor-pointer" />
+              </div>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  AreaChart, Area, BarChart, Bar,
+  AreaChart, Area,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell
 } from 'recharts'
 import api from '../api'
@@ -75,12 +75,12 @@ export default function Dashboard() {
   const { isChef } = useAuth()
   const navigate = useNavigate()
   const [kpis, setKpis]       = useState(null)
-  const [courbe, setCourbe]   = useState([])
-  const [familles, setFamilles] = useState([])
+  const [courbeAll, setCourbeAll] = useState([])
   const [alertes, setAlertes] = useState([])
   const [semelles, setSemelles] = useState(null)
   const [loading, setLoading] = useState(true)
   const [prixM3, setPrixM3]   = useState(150000)
+  const [periode, setPeriode] = useState('semaine') // 'semaine' | 'mois' | 'tout'
 
   useEffect(() => {
     if (!projetActif) return
@@ -88,25 +88,40 @@ export default function Dashboard() {
     const id = projetActif.id
     Promise.all([
       api.get(`/api/analytics/kpis/${id}?prix_m3=${prixM3}`),
-      api.get(`/api/analytics/courbe-hebdo/${id}`),
-      api.get(`/api/analytics/volumes-par-famille/${id}`),
+      api.get(`/api/analytics/courbe-hebdo/${id}?prix_m3=${prixM3}`),
       api.get(`/api/analytics/alertes/${id}`),
       api.get(`/api/analytics/recap-semelles/${id}`).catch(() => null),
-    ]).then(([k, c, f, a, s]) => {
+    ]).then(([k, c, a, s]) => {
       setKpis(k.data)
-      // Construire courbe hebdo aplatie
+      // Construire courbe aplatie avec tous les champs cumulés
       const pts = []
       ;(c.data.semaines || []).forEach(sem => {
         sem.jours?.forEach(j => {
-          pts.push({ jour: `${j.jour} ${sem.debut?.slice(0,5)}`, reel: j.reel, prevu: j.prevu })
+          pts.push({
+            date: j.date,
+            jour: `${j.jour} ${j.date?.slice(8,10)}/${j.date?.slice(5,7)}`,
+            reel: j.reel, prevu: j.prevu,
+            cumul_reel: j.cumul_reel, cumul_prevu: j.cumul_prevu,
+            cumul_volume: j.cumul_volume, cumul_cout: j.cumul_cout,
+            avancement_pct: j.avancement_pct, avancement_prevu_pct: j.avancement_prevu_pct,
+          })
         })
       })
-      setCourbe(pts.slice(-30))
-      setFamilles(f.data)
+      setCourbeAll(pts)
       setAlertes(a.data)
       setSemelles(s?.data || null)
     }).finally(() => setLoading(false))
   }, [projetActif, prixM3])
+
+  // Filtrer la courbe selon la période choisie
+  const courbe = (() => {
+    if (!courbeAll.length) return []
+    if (periode === 'tout') return courbeAll
+    const n = periode === 'semaine' ? 7 : 30
+    return courbeAll.slice(-n)
+  })()
+
+  const lastPoint = courbeAll[courbeAll.length - 1]
 
   if (!projetActif) return (
     <div className="flex items-center justify-center h-full themed-muted text-sm">
@@ -243,16 +258,52 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Courbe hebdomadaire */}
+        {/* Courbe d'activité — cumulée avec sélecteur période */}
         <div className="themed-card rounded-2xl border p-5 mb-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
-              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Activité hebdomadaire</h2>
-              <p className="text-xs themed-muted mt-0.5">Pieux réalisés vs prévus · Jeu → Mer</p>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Activité — cumul</h2>
+              <p className="text-xs themed-muted mt-0.5">Pieux réalisés vs prévus · cumul Jeu → Mer</p>
+            </div>
+            <div className="flex rounded-lg overflow-hidden themed-border border">
+              {[['semaine','7j'],['mois','30j'],['tout','Tout']].map(([v,l]) => (
+                <button key={v} onClick={() => setPeriode(v)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${periode === v ? 'themed-active' : 'themed-hover themed-secondary'}`}>
+                  {l}
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Sous-KPIs du dernier point */}
+          {lastPoint && (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
+                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Avancement</div>
+                <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  {lastPoint.avancement_pct}%
+                  <span className="text-xs themed-muted font-normal ml-1">
+                    (prévu {lastPoint.avancement_prevu_pct}%)
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
+                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Volume cumulé</div>
+                <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  {lastPoint.cumul_volume?.toFixed(1)} m³
+                </div>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
+                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Coût cumulé</div>
+                <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  {fcfa(lastPoint.cumul_cout || 0)}
+                </div>
+              </div>
+            </div>
+          )}
+
           {courbe.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={courbe} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gPrevu" x1="0" y1="0" x2="0" y2="1">
@@ -268,9 +319,9 @@ export default function Dashboard() {
                 <XAxis dataKey="jour" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="prevu" name="Prévu" stroke="#60a5fa" strokeWidth={1.5}
+                <Area type="monotone" dataKey="cumul_prevu" name="Prévu (cumul)" stroke="#60a5fa" strokeWidth={1.5}
                   strokeDasharray="4 2" fill="url(#gPrevu)" dot={false} />
-                <Area type="monotone" dataKey="reel" name="Réalisé" stroke="#22c55e" strokeWidth={2}
+                <Area type="monotone" dataKey="cumul_reel" name="Réalisé (cumul)" stroke="#22c55e" strokeWidth={2}
                   fill="url(#gReel)" dot={{ r: 3, fill: '#22c55e' }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -281,68 +332,43 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Volumes par famille + Récap semelles */}
-        <div className="grid grid-cols-12 gap-4 mb-4">
 
-          {/* Volumes par famille */}
-          <div className="col-span-12 md:col-span-6 themed-card rounded-2xl border p-5">
-            <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-              Volumes par famille
-            </h2>
-            {familles.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={familles} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="famille" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="vol_budgetise" name="Budgétisé" fill="var(--border)" radius={[3,3,0,0]} />
-                  <Bar dataKey="vol_fore" name="Foré" fill="var(--accent)" radius={[3,3,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-40 flex items-center justify-center themed-muted text-xs">
-                Aucune famille renseignée
-              </div>
-            )}
-          </div>
-
-          {/* Récap par semelle */}
-          <div className="col-span-12 md:col-span-6 themed-card rounded-2xl border p-5">
-            <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-              Récap par groupe de semelle
-            </h2>
-            {semelles?.par_semelle?.length > 0 ? (
-              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                {semelles.par_semelle.map(s => (
-                  <div key={s.semelle_ref} className="flex items-center gap-3 px-3 py-2.5 rounded-xl themed-hover">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ background: 'var(--accent-soft)', color: 'var(--text-accent)' }}>
-                      {s.semelle_ref}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-                          {s.nb_pieux} pieu{s.nb_pieux > 1 ? 'x' : ''}
-                        </span>
-                        <span className="text-xs themed-muted">{s.avancement_pct}%</span>
-                      </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-                        <div className="h-full rounded-full transition-all"
-                          style={{ width: `${s.avancement_pct}%`, background: s.avancement_pct === 100 ? '#22c55e' : 'var(--accent)' }} />
-                      </div>
-                    </div>
-                    <span className="text-xs themed-muted flex-shrink-0">{(s.vol_fore || 0).toFixed(1)} m³</span>
+        {/* Top semelles en retard / proches de la fin */}
+        {semelles?.par_semelle?.length > 0 && (
+          <div className="themed-card rounded-2xl border p-5 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Groupes de semelle — aperçu
+              </h2>
+              <button onClick={() => navigate('/fondations')}
+                className="text-xs themed-accent hover:opacity-70 cursor-pointer transition-opacity">
+                Voir tout →
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {semelles.par_semelle.slice(0, 6).map(s => (
+                <div key={s.semelle_ref} className="flex items-center gap-3 px-3 py-2.5 rounded-xl themed-hover">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ background: 'var(--accent-soft)', color: 'var(--text-accent)' }}>
+                    {s.semelle_ref}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-40 flex items-center justify-center themed-muted text-xs">
-                Aucune semelle associée aux pieux
-              </div>
-            )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {s.nb_pieux} pieu{s.nb_pieux > 1 ? 'x' : ''}
+                      </span>
+                      <span className="text-xs themed-muted">{s.avancement_pct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                      <div className="h-full rounded-full transition-all"
+                        style={{ width: `${s.avancement_pct}%`, background: s.avancement_pct === 100 ? '#22c55e' : 'var(--accent)' }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Alertes */}
         {alertes.length > 0 && (

@@ -80,8 +80,10 @@ export default function Dashboard() {
   const [semelles, setSemelles] = useState(null)
   const [loading, setLoading] = useState(true)
   const [prixM3, setPrixM3]   = useState(150000)
-  const [dateDebut, setDateDebut] = useState('')
-  const [dateFin, setDateFin]     = useState('')
+  const [dateDebut, setDateDebutRaw] = useState(() => localStorage.getItem('smc_dash_date_debut') || '')
+  const [dateFin, setDateFinRaw]     = useState(() => localStorage.getItem('smc_dash_date_fin') || '')
+  const setDateDebut = (v) => { setDateDebutRaw(v); localStorage.setItem('smc_dash_date_debut', v) }
+  const setDateFin   = (v) => { setDateFinRaw(v); localStorage.setItem('smc_dash_date_fin', v) }
 
   useEffect(() => {
     if (!projetActif) return
@@ -147,7 +149,23 @@ export default function Dashboard() {
     setDateFin(maxDate)
   }
 
-  const lastPoint = courbeAll[courbeAll.length - 1]
+  // Point de fin de la période filtrée (pour les 3 cartes dynamiques)
+  const periodEnd   = courbe[courbe.length - 1]
+  const periodStart = courbe[0]
+  // Deltas sur la période sélectionnée
+  const periodDeltaVolume = periodEnd && periodStart
+    ? (periodEnd.cumul_volume || 0) - (periodStart.cumul_volume || 0) + (periodStart.volume_jour || 0)
+    : 0
+  const periodDeltaCout = periodDeltaVolume * prixM3
+  const periodDeltaReel = periodEnd && periodStart
+    ? (periodEnd.cumul_reel || 0) - (periodStart.cumul_reel || 0) + (periodStart.reel || 0)
+    : 0
+  const periodDeltaPrevu = periodEnd && periodStart
+    ? (periodEnd.cumul_prevu || 0) - (periodStart.cumul_prevu || 0) + (periodStart.prevu || 0)
+    : 0
+  const nbPieuxTotal = kpis?.pieux?.total || kpis?.par_type?.['Pieu'] || 1
+  const periodAvancementPct = Math.round((periodDeltaReel / nbPieuxTotal) * 1000) / 10
+  const periodAvancementPrevuPct = Math.round((periodDeltaPrevu / nbPieuxTotal) * 1000) / 10
 
   if (!projetActif) return (
     <div className="flex items-center justify-center h-full themed-muted text-sm">
@@ -314,32 +332,36 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Sous-KPIs du dernier point */}
-          {lastPoint && (
+          {/* Sous-KPIs sur la période sélectionnée */}
+          {periodEnd && (
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
-                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Avancement</div>
+                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Avancement (période)</div>
                 <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {lastPoint.avancement_pct}%
+                  +{periodAvancementPct}%
                   <span className="text-xs themed-muted font-normal ml-1">
-                    (prévu {lastPoint.avancement_prevu_pct}%)
+                    (prévu +{periodAvancementPrevuPct}%)
                   </span>
                 </div>
+                <div className="text-xs themed-muted mt-0.5">{periodDeltaReel} pieu{periodDeltaReel !== 1 ? 'x' : ''} réalisé{periodDeltaReel !== 1 ? 's' : ''}</div>
               </div>
               <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
-                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Volume cumulé</div>
+                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Volume (période)</div>
                 <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {lastPoint.cumul_volume?.toFixed(1)} m³
+                  {periodDeltaVolume.toFixed(1)} m³
                 </div>
+                <div className="text-xs themed-muted mt-0.5">Total cumulé : {(periodEnd.cumul_volume || 0).toFixed(1)} m³</div>
               </div>
               <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
-                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Coût cumulé</div>
+                <div className="text-xs themed-muted uppercase tracking-wide mb-0.5">Coût (période)</div>
                 <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {fcfa(lastPoint.cumul_cout || 0)}
+                  {fcfa(periodDeltaCout)}
                 </div>
+                <div className="text-xs themed-muted mt-0.5">Total cumulé : {fcfa(periodEnd.cumul_cout || 0)}</div>
               </div>
             </div>
           )}
+
 
           {courbe.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>

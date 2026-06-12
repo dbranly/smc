@@ -221,9 +221,8 @@ function ElementMesh({ element, position, selected, onClick, showLabels, colorBy
     const portee= dims.length >= 2 ? Math.max(...dims) : 9.0  // portée horiz
     const haut  = element.hauteur || 0.55                  // section haut
     // Posée en tête de poteau : y = hauteur_poteau - haut/2
-    // hauteur_poteau est dans les données, sinon on estime selon famille
-    const h_poteau = element.hauteur_poteau
-      || (element.famille && ['F1','F4'].includes(element.famille) ? 4.50 : 3.80)
+    // hauteur_poteau est dans les données, sinon valeur par défaut
+    const h_poteau = element.hauteur_poteau || 3.80
     const yC       = h_poteau - haut / 2
     // Orientation selon la grande dimension
     const isX  = (element.largeur || 0) >= (element.longueur || 0)
@@ -248,8 +247,7 @@ function ElementMesh({ element, position, selected, onClick, showLabels, colorBy
     const long = element.longueur || 6.0
     const ep   = element.epaisseur || element.hauteur || 0.15
     // Posée en tête de poteau, au-dessus des poutres
-    const h_poteau = element.hauteur_poteau
-      || (element.famille && ['F1','F4'].includes(element.famille) ? 4.50 : 3.80)
+    const h_poteau = element.hauteur_poteau || 3.80
     const yC       = h_poteau + ep / 2   // dessus des poutres
     return (
       <group position={[position.x, yC, position.z]} {...handlers}>
@@ -591,7 +589,8 @@ export default function Vue3D({ elements, selected, onSelect, colorBy = 'statut'
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
             <span className="text-slate-400">Type</span><span className="text-slate-700 font-medium">{selected.type_element}</span>
             <span className="text-slate-400">Lot</span><span className="text-slate-700">{selected.lot}</span>
-            {selected.famille && <><span className="text-slate-400">Famille</span><span className="text-slate-700">{selected.famille}</span></>}
+            {selected.semelle_ref && <><span className="text-slate-400">Semelle</span><span className="text-slate-700">{selected.semelle_ref}</span></>}
+            {selected.poteau_ref && <><span className="text-slate-400">Poteau</span><span className="text-slate-700">{selected.poteau_ref}</span></>}
             {selected.diametre && <><span className="text-slate-400">Ø</span><span className="font-mono text-slate-700">{selected.diametre}mm</span></>}
             {selected.cote_bs_theorique != null && <><span className="text-slate-400">BS</span><span className="font-mono text-slate-700">{selected.cote_bs_theorique}m</span></>}
             {selected.cote_bi_theorique != null && <><span className="text-slate-400">BI</span><span className="font-mono text-slate-700">{selected.cote_bi_theorique}m</span></>}

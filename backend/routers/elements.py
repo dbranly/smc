@@ -105,161 +105,106 @@ def import_excel(
     wb = openpyxl.load_workbook(io.BytesIO(file.file.read()), data_only=True)
     ws = wb.active
 
-    # Normaliser les en-têtes (insensible à la casse et aux espaces)
-    raw_headers = [str(c.value).strip().upper().replace(" ","_") if c.value else "" for c in ws[1]]
-    # Si ligne 2 est aussi une ligne d'en-tête (cas du fichier Warda à 2 lignes d'en-tête)
-    second_row = [ws.cell(2, ci+1).value for ci in range(len(raw_headers))]
-    has_double_header = any(isinstance(v, str) and v.strip().upper() in ('X','Y','Z','TOIT_ROCHEUX','ROCHE')
-                            for v in second_row if v)
-    start_row = 3 if has_double_header else 2
+    # ── Détection automatique de la structure ─────────────────────
+    row1 = [ws.cell(1, ci).value for ci in range(1, ws.max_column+1)]
+    row2 = [ws.cell(2, ci).value for ci in range(1, ws.max_column+1)]
 
-    # Construire les en-têtes fusionnés pour le fichier Warda (colonnes groupées)
-    def build_headers(ws, has_double_header):
-        headers = []
-        row1 = [str(ws.cell(1, ci).value).strip().upper().replace(" ","_") if ws.cell(1, ci).value else ""
-                for ci in range(1, ws.max_column+1)]
-        if not has_double_header:
-            return row1
-        row2 = [str(ws.cell(2, ci).value).strip().upper().replace(" ","_") if ws.cell(2, ci).value else ""
-                for ci in range(1, ws.max_column+1)]
+    is_warda_format = any(
+        str(v).upper() in ("COORDONNEES VIROLE", "COORDONNEES THEORIQUES",
+                           "PROFONDEURS (M)", "BETON ARME QTE (M3)")
+        for v in row1 if v
+    )
+
+    if is_warda_format:
+        col_names = []
         last_group = ""
         for r1, r2 in zip(row1, row2):
-            if r1: last_group = r1
-            if r2:
-                headers.append(f"{last_group}_{r2}")
-            else:
-                headers.append(last_group)
-        return headers
+            if r1: last_group = str(r1).strip().upper().replace(" ","_")
+            sub = str(r2).strip().upper() if r2 else ""
+            col_names.append(f"{last_group}_{sub}" if sub else last_group)
+        row3_val = ws.cell(3, 2).value
+        start_row = 4 if (row3_val and not str(row3_val).startswith("PI")) else 3
+    else:
+        col_names = [str(v).strip().upper().replace(" ","_") if v else "" for v in row1]
+        start_row = 2
 
-    headers = build_headers(ws, has_double_header)
-    headers_lower = [h.lower() for h in headers]
-
-    def col(d, *keys):
-        """Cherche une valeur parmi plusieurs clés possibles"""
+    def get(d, *keys):
         for k in keys:
-            v = d.get(k.lower())
-            if v not in (None, "", "None", "/", "none"):
+            v = d.get(k.upper())
+            if v not in (None, "", "None", "/"):
                 try: return float(v)
                 except: pass
         return None
 
-    def col_str(d, *keys):
+    def get_str(d, *keys):
         for k in keys:
-            v = d.get(k.lower())
-            if v and str(v).strip() not in ("", "None", "/", "none"):
+            v = d.get(k.upper())
+            if v and str(v).strip() not in ("", "None", "/"):
                 return str(v).strip()
         return None
 
-    def col_date(d, *keys):
+    def get_date(d, *keys):
+        from datetime import datetime
         for k in keys:
-            v = d.get(k.lower())
-            if v and isinstance(v, datetime):
-                return v
-            if v and isinstance(v, str):
-                try: return datetime.strptime(v, "%d/%m/%Y")
-                except: pass
+            v = d.get(k.upper())
+            if isinstance(v, datetime): return v
+            if isinstance(v, str):
+                for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
+                    try: return datetime.strptime(v, fmt)
+                    except: pass
         return None
 
     created, updated, errors = 0, 0, []
 
     for row_values in ws.iter_rows(min_row=start_row, values_only=True):
-        d = dict(zip(headers_lower, row_values))
-
-        # Référence : chercher dans PIEUX, REFERENCE, REPERE
-        ref = col_str(d, "pieux", "reference", "repere", "pile_number")
-        if not ref: continue
-
-        # Normaliser la référence PI017 → Pi.17 ou garder telle quelle
-        # On garde le format d'origine pour compatibilité
+        d = {col_names[i].upper(): v for i, v in enumerate(row_values) if i < len(col_names)}
+        ref = get_str(d, "PIEUX", "REFERENCE", "REPERE")
+        if not ref or str(ref).strip() == "/":
+            continue
         try:
-            # Coordonnées théoriques
-            theo_x = col(d, "coordonnees_theoriques_x", "theo_x", "coord_x", "e(x)")
-            theo_y = col(d, "coordonnees_theoriques_y", "theo_y", "coord_y", "n(y)")
-
-            # Coordonnées virole
-            virole_x = col(d, "coordonnees_virole_x", "virole_x", "coord_virole_x")
-            virole_y = col(d, "coordonnees_virole_y", "virole_y", "coord_virole_y")
-            virole_z = col(d, "coordonnees_virole_z", "virole_z", "coord_virole_z",
-                           "altitude_virole", "elevation")
-
-            # Cotes
-            cote_plancher = col(d, "cote_plancher", "zp", "altitude_plancher")
-            cote_recepee  = col(d, "cote_recepee_a_atteindre", "cote_recepee")
-
-            # Profondeurs
-            prof_toit = col(d, "profondeurs_(m)_toit_rocheux", "prof_toit_rocheux",
-                            "toit_rocheux", "depth")
-            prof_roche= col(d, "profondeurs_(m)_roche", "prof_roche", "roche")
-            ancrage   = col(d, "ancrage", "ancrage_(m)")
-
-            # Calculer ancrage si manquant
-            if ancrage is None and prof_toit is not None and prof_roche is not None:
+            theo_x   = get(d, "COORDONNEES_THEORIQUES_X", "COORD_X", "X")
+            theo_y   = get(d, "COORDONNEES_THEORIQUES_Y", "COORD_Y", "Y")
+            vir_x    = get(d, "COORDONNEES_VIROLE_X", "VIROLE_X")
+            vir_y    = get(d, "COORDONNEES_VIROLE_Y", "VIROLE_Y")
+            vir_z    = get(d, "COORDONNEES_VIROLE_Z", "VIROLE_Z")
+            alt_tn   = get(d, "COORDONNEES_DU_TN_Z", "ALTITUDE_TN")
+            cote_pl  = get(d, "COTE_PLANCHER_ZP", "COTE_PLANCHER", "ZP")
+            cote_rec = get(d, "COTE_RECEPEE_A_ATTEINDRE", "COTE_RECEPEE")
+            prof_toit= get(d, "PROFONDEURS_(M)_TOIT ROCHEUX", "PROFONDEURS_(M)_TOIT_ROCHEUX", "PROF_TOIT_ROCHEUX")
+            prof_roche=get(d, "PROFONDEURS_(M)_ROCHE", "PROF_ROCHE")
+            ancrage  = get(d, "ANCRAGE")
+            if ancrage is None and prof_toit and prof_roche:
                 ancrage = round(prof_roche - prof_toit, 4)
-
-            # Volume béton
-            vol_beton = col(d, "beton_arme_qte_(m3)", "volume_beton", "volume_fore",
-                            "vol_beton", "volume_budgetise")
-
-            # Calculer volume si manquant (π×r²×prof_roche)
-            if vol_beton is None and prof_roche is not None:
-                d_pieu = col(d, "diametre", "diameter") or 0.8  # défaut Ø800
-                vol_beton = round(math.pi * (d_pieu/2)**2 * prof_roche, 4)
-
-            # Liaisons
-            semelle_ref = col_str(d, "semelle")
-            poteau_ref  = col_str(d, "poteau")
-
-            # Date forage
-            date_forage = col_date(d, "date")
-
-            # Lot et type
-            lot      = col_str(d, "lot") or "Fondations"
-            type_el  = col_str(d, "type_element") or "Pieu"
-            famille  = col_str(d, "famille")
-            materiau = col_str(d, "materiau")
-            armature = col_str(d, "armature")
-
-            # Statut : si volume_fore renseigné → Foré
-            statut = col_str(d, "statut_element") or "À faire"
-            if vol_beton and vol_beton > 0 and statut == "À faire":
+            vol = get(d, "BETON_ARME_QTE_(M3)", "VOLUME_FORE", "VOLUME_BETON")
+            if vol is None and prof_roche:
+                diam = get(d, "DIAMETRE") or 0.8
+                vol  = round(math.pi * (diam/2)**2 * prof_roche, 4)
+            sem_ref  = get_str(d, "SEMELLE")
+            pot_ref  = get_str(d, "POTEAU")
+            date_f   = get_date(d, "DATE", "DATE_FORAGE")
+            statut   = get_str(d, "STATUT_ELEMENT") or "À faire"
+            if vol and vol > 0 and statut == "À faire":
                 statut = "Foré"
 
             fields = dict(
-                projet_id       = projet_id,
-                reference       = ref,
-                lot             = lot,
-                type_element    = type_el,
-                famille         = famille,
-                # Coordonnées théoriques
-                coord_x         = theo_x,
-                coord_y         = theo_y,
-                # Coordonnées virole
-                coord_virole_x  = virole_x,
-                coord_virole_y  = virole_y,
-                coord_virole_z  = virole_z,
-                # Cotes
-                cote_plancher   = cote_plancher,
-                cote_recepee    = cote_recepee,
-                # Profondeurs
-                prof_toit_rocheux = prof_toit,
-                prof_roche      = prof_roche,
-                ancrage         = ancrage,
-                # Volume
-                volume_fore     = vol_beton,
-                volume_budgetise= col(d, "volume_budgetise", "vol_budg"),
-                # Liaisons
-                semelle_ref     = semelle_ref if semelle_ref != "/" else None,
-                poteau_ref      = poteau_ref if poteau_ref != "/" else None,
-                # Date
-                date_forage     = date_forage,
-                # Matériaux
-                materiau        = materiau,
-                armature        = armature,
-                # Statut
-                statut_element  = statut,
+                projet_id=projet_id, reference=ref,
+                lot=get_str(d, "LOT") or "Fondations",
+                type_element=get_str(d, "TYPE_ELEMENT") or "Pieu",
+                famille=get_str(d, "FAMILLE"),
+                coord_x=theo_x, coord_y=theo_y,
+                coord_virole_x=vir_x, coord_virole_y=vir_y, coord_virole_z=vir_z,
+                altitude_tn=alt_tn,
+                cote_plancher=cote_pl, cote_recepee=cote_rec,
+                prof_toit_rocheux=prof_toit, prof_roche=prof_roche, ancrage=ancrage,
+                volume_fore=vol, volume_budgetise=get(d, "VOLUME_BUDGETISE"),
+                semelle_ref=sem_ref if sem_ref != "/" else None,
+                poteau_ref=pot_ref if pot_ref != "/" else None,
+                date_forage=date_f,
+                materiau=get_str(d, "MATERIAU"),
+                armature=get_str(d, "ARMATURE"),
+                statut_element=statut,
             )
 
-            # Chercher si l'élément existe déjà
             e = db.query(models.Element).filter(
                 models.Element.projet_id == projet_id,
                 models.Element.reference == ref
@@ -267,8 +212,7 @@ def import_excel(
 
             if e:
                 for k, v in fields.items():
-                    if v is not None:
-                        setattr(e, k, v)
+                    if v is not None: setattr(e, k, v)
                 updated += 1
             else:
                 clean = {k: v for k, v in fields.items() if v is not None}
@@ -280,14 +224,9 @@ def import_excel(
             errors.append({"reference": ref, "erreur": str(ex)})
 
     db.commit()
-    return {
-        "créés": created,
-        "mis_à_jour": updated,
-        "erreurs": errors,
-        "total": created + updated
-    }
+    return {"créés": created, "mis_à_jour": updated, "erreurs": errors, "total": created + updated}
 
-# ── Export template Excel ────────────────────────────────────────
+
 @router.get("/export/template-excel")
 def export_template(_: models.User = Depends(get_current_user)):
     wb = openpyxl.Workbook()

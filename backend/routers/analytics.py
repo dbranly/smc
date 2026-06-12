@@ -118,34 +118,35 @@ def get_kpis(
 def courbe_hebdo(
     projet_id: int,
     cadence_prevue: int = Query(2, description="Nombre de pieux prévus par jour"),
+    prix_m3: float = Query(150000, description="Prix beton arme FCFA/m3"),
     db: Session = Depends(get_db),
     _: models.User = Depends(get_current_user)
 ):
     """
-    Courbe Jeu → Mer, Dimanche exclu.
-    Prévisionnelle vs Réelle (pieux réalisés par jour).
+    Courbe Jeu -> Mer, Dimanche exclu.
+    Previsionnelle vs Reelle (pieux realises par jour) + cumuls volume/cout/avancement.
     """
     elements = db.query(models.Element)\
                  .filter(models.Element.projet_id == projet_id)\
                  .filter(models.Element.type_element == "Pieu")\
                  .all()
 
-    # Pieux réalisés avec date
     realises = [e for e in elements if pieu_realise(e) and e.date_forage]
 
     if not realises:
         return {"semaines": [], "total_realises": 0, "total_prevu": 0}
 
-    # Grouper par jour (Jeu=0 → Mer=6, sans Dim)
     jours_data = {}
     for e in realises:
         dt = e.date_forage
-        if dt.weekday() == 6:  # Dimanche exclu
+        if dt.weekday() == 6:
             continue
         key = dt.strftime("%Y-%m-%d")
-        jours_data[key] = jours_data.get(key, 0) + 1
+        if key not in jours_data:
+            jours_data[key] = {"nb": 0, "volume": 0.0}
+        jours_data[key]["nb"]     += 1
+        jours_data[key]["volume"] += e.volume_fore or 0
 
-    # Trouver la plage de dates (semaine Jeu→Mer)
     dates_sorted = sorted(jours_data.keys())
     if not dates_sorted:
         return {"semaines": [], "total_realises": 0, "total_prevu": 0}
@@ -153,16 +154,17 @@ def courbe_hebdo(
     date_debut = datetime.strptime(dates_sorted[0], "%Y-%m-%d")
     date_fin   = datetime.strptime(dates_sorted[-1], "%Y-%m-%d")
 
-    # Trouver le jeudi de la semaine de début
     def jeudi_semaine(dt):
-        # Aller au jeudi (weekday=3) de la même semaine ou précédente
         delta = (dt.weekday() - 3) % 7
         return dt - timedelta(days=delta)
 
-    # Construire les semaines
+    nb_pieux_total = len(elements)
+    vol_total      = sum(e.volume_fore or 0 for e in elements)
+
     semaines = []
     current = jeudi_semaine(date_debut)
-    cum_reel = 0
+    cum_nb = 0
+    cum_vol = 0.0
     cum_prevu = 0
 
     while current <= date_fin + timedelta(days=7):
@@ -170,24 +172,36 @@ def courbe_hebdo(
         total_reel_semaine = 0
         total_prevu_semaine = 0
 
-        for delta in range(7):  # Jeu(0) à Mer(6)
+        for delta in range(7):
             jour = current + timedelta(days=delta)
-            if jour.weekday() == 6:  # Dimanche skip
+            if jour.weekday() == 6:
                 continue
             key = jour.strftime("%Y-%m-%d")
-            nb_reel = jours_data.get(key, 0)
+            d = jours_data.get(key, {"nb": 0, "volume": 0.0})
+            nb_reel  = d["nb"]
+            vol_jour = d["volume"]
             nb_prevu = cadence_prevue
-            total_reel_semaine += nb_reel
-            total_prevu_semaine += nb_prevu
-            semaine_jours.append({
-                "date":       key,
-                "jour":       JOURS_SEMAINE.get(jour.weekday(), "?"),
-                "reel":       nb_reel,
-                "prevu":      nb_prevu,
-            })
 
-        cum_reel  += total_reel_semaine
-        cum_prevu += total_prevu_semaine
+            cum_nb    += nb_reel
+            cum_vol   += vol_jour
+            cum_prevu += nb_prevu
+
+            total_reel_semaine  += nb_reel
+            total_prevu_semaine += nb_prevu
+
+            semaine_jours.append({
+                "date":            key,
+                "jour":            JOURS_SEMAINE.get(jour.weekday(), "?"),
+                "reel":            nb_reel,
+                "prevu":           nb_prevu,
+                "volume_jour":     round(vol_jour, 3),
+                "cumul_reel":      cum_nb,
+                "cumul_prevu":     cum_prevu,
+                "cumul_volume":    round(cum_vol, 3),
+                "cumul_cout":      round(cum_vol * prix_m3, 0),
+                "avancement_pct":  round(cum_nb / nb_pieux_total * 100, 1) if nb_pieux_total else 0,
+                "avancement_prevu_pct": round(cum_prevu / nb_pieux_total * 100, 1) if nb_pieux_total else 0,
+            })
 
         if total_reel_semaine > 0 or current <= date_fin:
             semaines.append({
@@ -197,9 +211,11 @@ def courbe_hebdo(
                 "jours":            semaine_jours,
                 "total_reel":       total_reel_semaine,
                 "total_prevu":      total_prevu_semaine,
-                "cumul_reel":       cum_reel,
+                "cumul_reel":       cum_nb,
                 "cumul_prevu":      cum_prevu,
-                "avancement_pct":   round(cum_reel / len(elements) * 100, 1) if elements else 0,
+                "cumul_volume":     round(cum_vol, 3),
+                "cumul_cout":       round(cum_vol * prix_m3, 0),
+                "avancement_pct":   round(cum_nb / nb_pieux_total * 100, 1) if nb_pieux_total else 0,
             })
 
         current += timedelta(days=7)
@@ -208,10 +224,13 @@ def courbe_hebdo(
 
     return {
         "semaines": semaines,
-        "total_realises": sum(jours_data.values()),
+        "total_realises": sum(d["nb"] for d in jours_data.values()),
         "total_prevu": len(semaines) * 6 * cadence_prevue,
         "cadence_prevue": cadence_prevue,
-        "nb_pieux_total": len(elements),
+        "nb_pieux_total": nb_pieux_total,
+        "volume_total": round(vol_total, 3),
+        "cout_total": round(vol_total * prix_m3, 0),
+        "prix_m3": prix_m3,
     }
 
 # ── 3. Courbe mensuelle cumulée ──────────────────────────────────

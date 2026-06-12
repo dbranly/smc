@@ -30,7 +30,7 @@ function StatusBadge({ statut }) {
 }
 
 const EMPTY_FORM = {
-  reference: '', type_element: 'Pieu', famille: '',
+  reference: '', type_element: 'Pieu',
   coord_x: '', coord_y: '', diametre: '800',
   cote_bs_theorique: '', cote_bi_theorique: '',
   volume_budgetise: '', materiau: 'Béton C30/37', armature: '500A/B',
@@ -106,7 +106,7 @@ export default function Fondations() {
   const handleCreate = async (ev) => {
     ev.preventDefault()
     const payload = { projet_id: projetActif.id, lot: 'Fondations' }
-    Object.entries(newForm).forEach(([k, v]) => { if (v !== '') payload[k] = isNaN(v) || k === 'reference' || k === 'famille' || k === 'materiau' || k === 'armature' || k === 'type_element' ? v : Number(v) })
+    Object.entries(newForm).forEach(([k, v]) => { if (v !== '') payload[k] = isNaN(v) || k === 'reference' || k === 'materiau' || k === 'armature' || k === 'type_element' ? v : Number(v) })
     await api.post('/api/elements/', payload)
     setShowForm(false); setNewForm(EMPTY_FORM); load()
   }
@@ -410,8 +410,8 @@ export default function Fondations() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[['famille', 'Famille', 'text', 'F1'], ['coord_x', 'Coord X', 'number', ''], ['coord_y', 'Coord Y', 'number', '']].map(([k, l, type, ph]) => (
+              <div className="grid grid-cols-2 gap-3">
+                {[['coord_x', 'Coord X', 'number', ''], ['coord_y', 'Coord Y', 'number', '']].map(([k, l, type, ph]) => (
                   <div key={k}>
                     <label className="block text-xs font-semibold themed-secondary mb-1.5 uppercase tracking-wide">{l}</label>
                     <input type={type} step="0.001" value={newForm[k]}

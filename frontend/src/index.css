@@ -4,6 +4,7 @@
 :root, [data-theme="slate"] {
   --bg-app:        #f8fafc;
   --bg-sidebar:    #ffffff;
+  --bg-topbar:     #ffffff;
   --bg-card:       #ffffff;
   --bg-hover:      #f1f5f9;
   --bg-active:     #0f172a;
@@ -23,18 +24,29 @@
   --accent-hover:  #1e293b;
   --accent-soft:   #eff6ff;
 
-  --shadow:        0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md:     0 4px 12px rgba(0,0,0,0.1);
+  --shadow:        0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:     0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:     0 8px 30px rgba(0,0,0,0.10);
 
   --canvas-bg:     #f8fafc;
   --gizmo-bg:      #1e293b;
   --gizmo-text:    #f1f5f9;
+
+  /* Couleurs d'accent façon Notion — pour catégories/sections */
+  --c-blue:    #3b82f6;  --c-blue-soft:   #dbeafe;
+  --c-purple:  #a855f7;  --c-purple-soft: #f3e8ff;
+  --c-green:   #22c55e;  --c-green-soft:  #dcfce7;
+  --c-orange:  #f97316;  --c-orange-soft: #ffedd5;
+  --c-pink:    #ec4899;  --c-pink-soft:   #fce7f3;
+  --c-amber:   #f59e0b;  --c-amber-soft:  #fef3c7;
+  --c-teal:    #14b8a6;  --c-teal-soft:   #ccfbf1;
 }
 
 /* ── Thème Stone (clair chaud — BTP / terrain) ── */
 [data-theme="stone"] {
   --bg-app:        #fafaf9;
   --bg-sidebar:    #ffffff;
+  --bg-topbar:     #ffffff;
   --bg-card:       #ffffff;
   --bg-hover:      #f5f5f4;
   --bg-active:     #292524;
@@ -54,23 +66,33 @@
   --accent-hover:  #1c1917;
   --accent-soft:   #fef3c7;
 
-  --shadow:        0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md:     0 4px 12px rgba(0,0,0,0.1);
+  --shadow:        0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:     0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:     0 8px 30px rgba(0,0,0,0.10);
 
   --canvas-bg:     #fafaf9;
   --gizmo-bg:      #292524;
   --gizmo-text:    #fafaf9;
+
+  --c-blue:    #3b82f6;  --c-blue-soft:   #dbeafe;
+  --c-purple:  #a855f7;  --c-purple-soft: #f3e8ff;
+  --c-green:   #16a34a;  --c-green-soft:  #dcfce7;
+  --c-orange:  #ea580c;  --c-orange-soft: #ffedd5;
+  --c-pink:    #db2777;  --c-pink-soft:   #fce7f3;
+  --c-amber:   #d97706;  --c-amber-soft:  #fef3c7;
+  --c-teal:    #0d9488;  --c-teal-soft:   #ccfbf1;
 }
 
 /* ── Thème Midnight (sombre professionnel) ── */
 [data-theme="midnight"] {
-  --bg-app:        #0f172a;
-  --bg-sidebar:    #1e293b;
-  --bg-card:       #1e293b;
-  --bg-hover:      #334155;
+  --bg-app:        #0b1120;
+  --bg-sidebar:    #131c2e;
+  --bg-topbar:     #131c2e;
+  --bg-card:       #131c2e;
+  --bg-hover:      #1e293b;
   --bg-active:     #3b82f6;
-  --bg-input:      #0f172a;
-  --bg-badge:      #334155;
+  --bg-input:      #0b1120;
+  --bg-badge:      #1e293b;
 
   --text-primary:  #f1f5f9;
   --text-secondary:#94a3b8;
@@ -78,37 +100,73 @@
   --text-active:   #ffffff;
   --text-accent:   #60a5fa;
 
-  --border:        #334155;
+  --border:        #1e293b;
   --border-focus:  #3b82f6;
 
   --accent:        #3b82f6;
   --accent-hover:  #2563eb;
-  --accent-soft:   #1e3a8a;
+  --accent-soft:   #1e3a5f;
 
-  --shadow:        0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md:     0 4px 12px rgba(0,0,0,0.4);
+  --shadow:        0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:     0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:     0 8px 30px rgba(0,0,0,0.6);
 
-  --canvas-bg:     #0f172a;
-  --gizmo-bg:      #334155;
+  --canvas-bg:     #0b1120;
+  --gizmo-bg:      #1e293b;
   --gizmo-text:    #f1f5f9;
+
+  --c-blue:    #60a5fa;  --c-blue-soft:   #1e3a5f;
+  --c-purple:  #c084fc;  --c-purple-soft: #3b2a5f;
+  --c-green:   #4ade80;  --c-green-soft:  #1a3a2a;
+  --c-orange:  #fb923c;  --c-orange-soft: #3a2a1a;
+  --c-pink:    #f472b6;  --c-pink-soft:   #3a1e2e;
+  --c-amber:   #fbbf24;  --c-amber-soft:  #3a2e0f;
+  --c-teal:    #2dd4bf;  --c-teal-soft:   #0f3a35;
 }
 
-/* ── Utilitaires thémés ── */
+/* ── Base ── */
 body { background: var(--bg-app); color: var(--text-primary); }
 
+/* ── Utilitaires thémés ── */
 .themed-sidebar   { background: var(--bg-sidebar); border-color: var(--border); }
-.themed-card      { background: var(--bg-card); border-color: var(--border); box-shadow: var(--shadow); }
+.themed-topbar    { background: var(--bg-topbar); border-color: var(--border); }
+.themed-card      { background: var(--bg-card); border-color: var(--border); }
 .themed-input     { background: var(--bg-input); border-color: var(--border); color: var(--text-primary); }
-.themed-input:focus { border-color: var(--border-focus); outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
+.themed-input:focus { border-color: var(--border-focus); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 .themed-hover:hover { background: var(--bg-hover); }
 .themed-active    { background: var(--bg-active) !important; color: var(--text-active) !important; }
 .themed-muted     { color: var(--text-muted); }
 .themed-secondary { color: var(--text-secondary); }
 .themed-accent    { color: var(--text-accent); }
 .themed-border    { border-color: var(--border); }
+
 .themed-btn-primary {
   background: var(--accent);
   color: var(--text-active);
   border: none;
 }
 .themed-btn-primary:hover { background: var(--accent-hover); }
+
+.shadow-themed    { box-shadow: var(--shadow); }
+.shadow-themed-md { box-shadow: var(--shadow-md); }
+.shadow-themed-lg { box-shadow: var(--shadow-lg); }
+
+/* ── Tags colorés façon Notion ── */
+.tag-blue   { background: var(--c-blue-soft);   color: var(--c-blue); }
+.tag-purple { background: var(--c-purple-soft); color: var(--c-purple); }
+.tag-green  { background: var(--c-green-soft);  color: var(--c-green); }
+.tag-orange { background: var(--c-orange-soft); color: var(--c-orange); }
+.tag-pink   { background: var(--c-pink-soft);   color: var(--c-pink); }
+.tag-amber  { background: var(--c-amber-soft);  color: var(--c-amber); }
+.tag-teal   { background: var(--c-teal-soft);   color: var(--c-teal); }
+
+/* ── Scrollbar discrète ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Transitions globales douces ── */
+button, a, input, select, textarea {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+}

@@ -280,7 +280,7 @@ export default function Layout() {
           </div>
         </div>
       )}
-      {(showDrop || showUser) && <div className="fixed inset-0 z-40" onClick={() => { setShowDrop(false); setShowUser(false) }} />}
+      {(showDrop || showUser) && <div className="fixed inset-0 z-20" onClick={() => { setShowDrop(false); setShowUser(false) }} />}
     </div>
   )
 }

@@ -5,21 +5,23 @@ import { useProjet } from '../ProjetContext'
 import { useTheme, THEMES } from '../ThemeContext'
 
 const ROLE_BADGE = {
-  chef:  'bg-orange-100 text-orange-700',
-  suivi: 'bg-teal-100 text-teal-700',
-  topo:  'bg-blue-100 text-blue-700',
-  civil: 'bg-green-100 text-green-700',
-  moa:   'bg-purple-100 text-purple-700',
+  chef:  'tag-orange',
+  suivi: 'tag-teal',
+  topo:  'tag-blue',
+  civil: 'tag-green',
+  moa:   'tag-purple',
 }
 const ROLE_LABEL = {
   chef: 'Chef de Mission', suivi: 'Ing. Suivi',
   topo: 'Ing. Topo', civil: 'Ing. Civil', moa: "Maître d'Ouvrage",
 }
-const LOTS = [
-  { to: '/fondations',  label: 'Fondations',  icon: '⬡', active: true  },
-  { to: '/gros-oeuvre', label: 'Gros œuvre',  icon: '▣', active: true  },
-  { to: '/finitions',   label: 'Finitions',   icon: '◈', active: false },
-  { to: '/maquette-3d', label: 'Maquette 3D', icon: '◉', active: true  },
+
+const NAV = [
+  { to: '/',            label: 'Dashboard',   icon: '◫', color: 'blue',   end: true,  active: true },
+  { to: '/fondations',  label: 'Fondations',  icon: '⬡', color: 'orange', active: true },
+  { to: '/gros-oeuvre', label: 'Gros œuvre',  icon: '▣', color: 'purple', active: true },
+  { to: '/finitions',   label: 'Finitions',   icon: '◈', color: 'teal',   active: false },
+  { to: '/maquette-3d', label: 'Maquette 3D', icon: '◉', color: 'green',  active: true },
 ]
 
 function ProjetModal({ onClose, onSave, initial = null }) {
@@ -30,13 +32,13 @@ function ProjetModal({ onClose, onSave, initial = null }) {
     try { await onSave(form) } finally { setSaving(false) }
   }
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="themed-card rounded-2xl shadow-xl w-full max-w-md p-6">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+      <div className="themed-card rounded-2xl shadow-themed-lg w-full max-w-md p-6 border">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
             {initial ? 'Modifier le projet' : 'Nouveau projet'}
           </h2>
-          <button onClick={onClose} className="themed-muted hover:opacity-70 text-xl transition-opacity">×</button>
+          <button onClick={onClose} className="themed-muted hover:opacity-70 text-xl transition-opacity cursor-pointer">×</button>
         </div>
         <form onSubmit={handle} className="space-y-4">
           {[
@@ -45,25 +47,25 @@ function ProjetModal({ onClose, onSave, initial = null }) {
             { key: 'localisation', label: 'Localisation', placeholder: 'Ville, Pays' },
           ].map(({ key, label, required, placeholder }) => (
             <div key={key}>
-              <label className="block text-xs font-medium themed-secondary mb-1">{label}</label>
+              <label className="block text-xs font-medium themed-secondary mb-1.5">{label}</label>
               <input required={required} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                className="themed-input w-full px-3 py-2 border rounded-lg text-sm transition-all"
+                className="themed-input w-full px-3.5 py-2.5 border rounded-xl text-sm transition-all"
                 placeholder={placeholder} />
             </div>
           ))}
           <div>
-            <label className="block text-xs font-medium themed-secondary mb-1">Description</label>
+            <label className="block text-xs font-medium themed-secondary mb-1.5">Description</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              rows={3} className="themed-input w-full px-3 py-2 border rounded-lg text-sm resize-none transition-all"
+              rows={3} className="themed-input w-full px-3.5 py-2.5 border rounded-xl text-sm resize-none transition-all"
               placeholder="Description…" />
           </div>
           <div className="flex gap-2 pt-1">
             <button type="submit" disabled={saving}
-              className="themed-btn-primary flex-1 font-medium py-2.5 rounded-lg text-sm transition-all cursor-pointer disabled:opacity-50">
+              className="themed-btn-primary flex-1 font-semibold py-2.5 rounded-xl text-sm transition-all cursor-pointer disabled:opacity-50">
               {saving ? 'Enregistrement…' : initial ? 'Mettre à jour' : 'Créer'}
             </button>
             <button type="button" onClick={onClose}
-              className="px-4 py-2.5 rounded-lg text-sm themed-hover cursor-pointer transition-all"
+              className="px-4 py-2.5 rounded-xl text-sm themed-hover cursor-pointer transition-all"
               style={{ background: 'var(--bg-badge)', color: 'var(--text-secondary)' }}>
               Annuler
             </button>
@@ -74,40 +76,19 @@ function ProjetModal({ onClose, onSave, initial = null }) {
   )
 }
 
-function ThemeSelector() {
+function ThemeDots() {
   const { theme, setTheme } = useTheme()
-  const [open, setOpen] = useState(false)
-  const current = THEMES.find(t => t.id === theme)
-
   return (
-    <div className="relative">
-      <button onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all themed-hover cursor-pointer"
-        title="Changer le thème">
-        <span className="text-base">{current?.icon}</span>
-        <div className="flex-1 text-left">
-          <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{current?.label}</div>
-          <div className="text-xs themed-muted">{current?.desc}</div>
-        </div>
-        <span className="themed-muted text-xs">▾</span>
-      </button>
-
-      {open && (
-        <div className="absolute bottom-full left-0 right-0 mb-1 themed-card border rounded-xl shadow-lg z-50 overflow-hidden p-1">
-          {THEMES.map(t => (
-            <button key={t.id} onClick={() => { setTheme(t.id); setOpen(false) }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all cursor-pointer ${theme === t.id ? 'themed-active' : 'themed-hover'}`}>
-              <span className="text-base">{t.icon}</span>
-              <div>
-                <div className="text-xs font-semibold" style={{ color: theme === t.id ? 'var(--text-active)' : 'var(--text-primary)' }}>
-                  {t.label}
-                </div>
-                <div className="text-xs opacity-60">{t.desc}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="flex items-center gap-1.5 px-1">
+      {THEMES.map(t => (
+        <button key={t.id} onClick={() => setTheme(t.id)} title={t.label}
+          className="w-5 h-5 rounded-full border-2 transition-all cursor-pointer flex-shrink-0"
+          style={{
+            background: t.id === 'slate' ? '#f8fafc' : t.id === 'stone' ? '#fafaf9' : '#0b1120',
+            borderColor: theme === t.id ? 'var(--accent)' : 'var(--border)',
+            transform: theme === t.id ? 'scale(1.15)' : 'scale(1)',
+          }} />
+      ))}
     </div>
   )
 }
@@ -117,146 +98,161 @@ export default function Layout() {
   const { projets, projetActif, selectProjet, createProjet, updateProjet, deleteProjet } = useProjet()
   const navigate = useNavigate()
   const [showDrop, setShowDrop]     = useState(false)
+  const [showUser, setShowUser]     = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [showEdit, setShowEdit]     = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-app)' }}>
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'var(--bg-app)' }}>
 
-      {/* Sidebar */}
-      <aside className="w-60 flex flex-col flex-shrink-0 themed-sidebar border-r">
+      {/* TOPBAR */}
+      <header className="themed-topbar border-b flex items-center gap-4 px-4 h-14 flex-shrink-0 z-30">
 
-        {/* Logo */}
-        <div className="px-5 py-4 themed-border border-b">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center themed-btn-primary">
-              <span className="font-bold text-sm">S</span>
-            </div>
-            <div>
-              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>SMC</div>
-              <div className="text-xs themed-muted">Suivi de chantier</div>
-            </div>
-          </div>
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center themed-btn-primary font-bold text-sm">S</div>
+          <span className="text-sm font-bold tracking-tight hidden sm:inline" style={{ color: 'var(--text-primary)' }}>SMC</span>
         </div>
 
-        {/* Sélecteur projet */}
-        <div className="px-3 py-3 themed-border border-b">
-          <div className="text-xs font-medium themed-muted uppercase tracking-wider mb-2 px-1">Projet actif</div>
-          <div className="relative">
-            <button onClick={() => setShowDrop(v => !v)}
-              className="w-full flex items-center justify-between px-3 py-2 themed-input themed-hover border rounded-lg text-left transition-all cursor-pointer">
-              <div className="min-w-0 flex-1">
-                {projetActif ? (
-                  <>
-                    <div className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{projetActif.nom}</div>
-                    {projetActif.localisation && <div className="text-xs themed-muted truncate">{projetActif.localisation}</div>}
-                  </>
-                ) : (
-                  <div className="text-xs themed-muted">Aucun projet</div>
-                )}
-              </div>
-              <span className="themed-muted text-xs ml-1 flex-shrink-0">▾</span>
-            </button>
+        <div className="w-px h-6 themed-border border-r flex-shrink-0" />
 
-            {showDrop && (
-              <div className="absolute top-full left-0 right-0 mt-1 themed-card border rounded-xl shadow-lg z-50 overflow-hidden">
-                <div className="max-h-52 overflow-y-auto">
-                  {projets.map(p => (
-                    <button key={p.id} onClick={() => { selectProjet(p); setShowDrop(false) }}
-                      className={`w-full px-3 py-2.5 text-left transition-all cursor-pointer themed-border border-b last:border-0 ${projetActif?.id === p.id ? '' : 'themed-hover'}`}
-                      style={projetActif?.id === p.id ? { background: 'var(--accent-soft)' } : {}}>
-                      <div className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{p.nom}</div>
-                      {p.localisation && <div className="text-xs themed-muted truncate">{p.localisation}</div>}
-                      {p.client && <div className="text-xs themed-muted truncate opacity-60">{p.client}</div>}
+        <div className="relative flex-1 max-w-xs">
+          <button onClick={() => setShowDrop(v => !v)}
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl themed-hover transition-all cursor-pointer text-left">
+            <span className="text-base flex-shrink-0">📁</span>
+            <div className="min-w-0 flex-1">
+              {projetActif ? (
+                <>
+                  <div className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{projetActif.nom}</div>
+                  {projetActif.localisation && <div className="text-xs themed-muted truncate">{projetActif.localisation}</div>}
+                </>
+              ) : (
+                <div className="text-xs themed-muted">Aucun projet</div>
+              )}
+            </div>
+            <span className="themed-muted text-xs flex-shrink-0">▾</span>
+          </button>
+
+          {showDrop && (
+            <div className="absolute top-full left-0 mt-1.5 themed-card border rounded-2xl shadow-themed-lg z-50 overflow-hidden w-72">
+              <div className="max-h-64 overflow-y-auto p-1.5">
+                {projets.map(p => (
+                  <button key={p.id} onClick={() => { selectProjet(p); setShowDrop(false) }}
+                    className={`w-full px-3 py-2.5 text-left transition-all cursor-pointer rounded-xl ${projetActif?.id === p.id ? '' : 'themed-hover'}`}
+                    style={projetActif?.id === p.id ? { background: 'var(--accent-soft)' } : {}}>
+                    <div className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{p.nom}</div>
+                    {p.localisation && <div className="text-xs themed-muted truncate">{p.localisation}</div>}
+                    {p.client && <div className="text-xs themed-muted truncate opacity-60">{p.client}</div>}
+                  </button>
+                ))}
+                {projets.length === 0 && <div className="px-3 py-3 text-xs themed-muted text-center">Aucun projet</div>}
+              </div>
+
+              {projetActif && canEdit && (
+                <div className="px-1.5 pb-1.5 flex gap-1">
+                  <button onClick={() => { setShowEdit(true); setShowDrop(false) }}
+                    className="flex-1 px-2 py-1.5 text-xs themed-secondary themed-hover rounded-xl transition-all cursor-pointer">
+                    ✏️ Modifier
+                  </button>
+                  {isChef && (
+                    <button onClick={() => { setConfirmDel(true); setShowDrop(false) }}
+                      className="flex-1 px-2 py-1.5 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer">
+                      🗑 Supprimer
                     </button>
-                  ))}
-                  {projets.length === 0 && <div className="px-3 py-3 text-xs themed-muted text-center">Aucun projet</div>}
+                  )}
                 </div>
-                {canEdit && (
-                  <div className="themed-border border-t">
-                    <button onClick={() => { setShowCreate(true); setShowDrop(false) }}
-                      className="w-full px-3 py-2.5 text-left text-xs font-medium themed-accent themed-hover flex items-center gap-2 cursor-pointer transition-all">
-                      <span className="text-sm">+</span> Nouveau projet
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              )}
 
-          {projetActif && canEdit && (
-            <div className="flex gap-1 mt-2">
-              <button onClick={() => setShowEdit(true)}
-                className="flex-1 px-2 py-1 text-xs themed-secondary themed-hover rounded-lg transition-all cursor-pointer">
-                ✏️ Modifier
-              </button>
-              {isChef && (
-                <button onClick={() => setConfirmDel(true)}
-                  className="flex-1 px-2 py-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer">
-                  🗑️ Suppr.
-                </button>
+              {canEdit && (
+                <div className="themed-border border-t p-1.5">
+                  <button onClick={() => { setShowCreate(true); setShowDrop(false) }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold rounded-xl flex items-center gap-2 cursor-pointer transition-all"
+                    style={{ background: 'var(--accent-soft)', color: 'var(--text-accent)' }}>
+                    <span className="text-sm">+</span> Nouveau projet
+                  </button>
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Nav principale */}
-        <nav className="px-3 pt-3 pb-1">
-          <NavLink to="/" end className={({ isActive }) =>
-            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${isActive ? 'themed-active font-medium' : 'themed-secondary themed-hover'}`}>
-            <span>▦</span> Dashboard
-          </NavLink>
-        </nav>
+        <div className="flex-1" />
 
-        <div className="px-4 pt-3 pb-1">
-          <div className="text-xs font-medium themed-muted uppercase tracking-wider">Lots</div>
-        </div>
-        <nav className="px-3 pb-3 space-y-0.5 flex-1">
-          {LOTS.map(({ to, label, icon, active }) => active ? (
-            <NavLink key={to} to={to} className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${isActive ? 'themed-active font-medium' : 'themed-secondary themed-hover'}`}>
-              <span>{icon}</span> {label}
-            </NavLink>
-          ) : (
-            <div key={to} className="flex items-center gap-2.5 px-3 py-2 text-sm themed-muted cursor-not-allowed">
-              <span>{icon}</span> <span>{label}</span>
-              <span className="ml-auto text-xs px-1.5 py-0.5 rounded themed-muted" style={{ background: 'var(--bg-badge)' }}>bientôt</span>
+        <ThemeDots />
+
+        <div className="w-px h-6 themed-border border-r flex-shrink-0" />
+
+        <div className="relative flex-shrink-0">
+          <button onClick={() => setShowUser(v => !v)}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-xl themed-hover transition-all cursor-pointer">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+              style={{ background: 'var(--accent-soft)', color: 'var(--text-accent)' }}>
+              {user?.nom?.charAt(0)?.toUpperCase()}
             </div>
-          ))}
-        </nav>
+            <div className="hidden md:block text-left">
+              <div className="text-xs font-semibold truncate max-w-24" style={{ color: 'var(--text-primary)' }}>{user?.nom}</div>
+            </div>
+            <span className="themed-muted text-xs hidden md:inline">▾</span>
+          </button>
 
-        {/* Footer sidebar */}
-        <div className="px-4 py-4 themed-border border-t space-y-2">
-
-          {/* Sélecteur thème */}
-          <ThemeSelector />
-
-          <div className="themed-border border-t pt-2">
-            <div className="text-sm font-medium truncate mb-1" style={{ color: 'var(--text-primary)' }}>{user?.nom}</div>
-            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${ROLE_BADGE[user?.role]}`}>
-              {ROLE_LABEL[user?.role]}
-            </span>
-            {isChef && (
-              <NavLink to="/utilisateurs"
-                className={({ isActive }) =>
-                  `mt-2 flex items-center gap-1.5 text-xs transition-all cursor-pointer ${isActive ? 'font-medium' : 'themed-muted hover:opacity-80'}`
-                }
-                style={({ isActive }) => ({ color: isActive ? 'var(--text-primary)' : undefined })}>
-                <span>👥</span> Gérer les utilisateurs
-              </NavLink>
-            )}
-            <button onClick={() => { logout(); navigate('/login') }}
-              className="mt-2 w-full text-left text-xs themed-muted hover:opacity-80 transition-opacity cursor-pointer">
-              Se déconnecter →
-            </button>
-          </div>
+          {showUser && (
+            <div className="absolute top-full right-0 mt-1.5 themed-card border rounded-2xl shadow-themed-lg z-50 overflow-hidden w-56 p-1.5">
+              <div className="px-3 py-2.5">
+                <div className="text-sm font-semibold truncate mb-1" style={{ color: 'var(--text-primary)' }}>{user?.nom}</div>
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_BADGE[user?.role]}`}>
+                  {ROLE_LABEL[user?.role]}
+                </span>
+              </div>
+              {isChef && (
+                <NavLink to="/utilisateurs" onClick={() => setShowUser(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs themed-secondary themed-hover rounded-xl transition-all cursor-pointer">
+                  <span>👥</span> Gérer les utilisateurs
+                </NavLink>
+              )}
+              <button onClick={() => { logout(); navigate('/login') }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs themed-muted hover:opacity-80 rounded-xl transition-all cursor-pointer text-left">
+                <span>↪</span> Se déconnecter
+              </button>
+            </div>
+          )}
         </div>
-      </aside>
+      </header>
 
-      <main className="flex-1 overflow-auto"><Outlet /></main>
+      {/* BODY */}
+      <div className="flex flex-1 overflow-hidden">
 
-      {/* Modals */}
+        <aside className="w-56 flex flex-col flex-shrink-0 themed-sidebar border-r p-3 gap-1">
+          {NAV.map(({ to, label, icon, color, end, active }) => active === false ? (
+            <div key={to} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm themed-muted cursor-not-allowed">
+              <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0 tag-${color}`}>{icon}</span>
+              <span>{label}</span>
+              <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full themed-muted" style={{ background: 'var(--bg-badge)' }}>bientôt</span>
+            </div>
+          ) : (
+            <NavLink key={to} to={to} end={end}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${isActive ? 'shadow-themed' : 'themed-hover themed-secondary'}`
+              }
+              style={({ isActive }) => isActive ? { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' } : {}}>
+              <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0 tag-${color}`}>{icon}</span>
+              <span>{label}</span>
+            </NavLink>
+          ))}
+
+          <div className="flex-1" />
+
+          {projetActif && (
+            <div className="px-3 py-3 rounded-xl text-xs" style={{ background: 'var(--bg-hover)' }}>
+              <div className="themed-muted uppercase tracking-wide font-semibold mb-1" style={{ fontSize: '10px' }}>Projet actif</div>
+              <div className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{projetActif.nom}</div>
+              {projetActif.client && <div className="themed-muted truncate mt-0.5">{projetActif.client}</div>}
+            </div>
+          )}
+        </aside>
+
+        <main className="flex-1 overflow-auto"><Outlet /></main>
+      </div>
+
       {showCreate && <ProjetModal onClose={() => setShowCreate(false)} onSave={async (d) => { await createProjet(d); setShowCreate(false) }} />}
       {showEdit && projetActif && (
         <ProjetModal onClose={() => setShowEdit(false)}
@@ -264,19 +260,19 @@ export default function Layout() {
           initial={{ nom: projetActif.nom, description: projetActif.description || '', localisation: projetActif.localisation || '', client: projetActif.client || '' }} />
       )}
       {confirmDel && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="themed-card rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="themed-card rounded-2xl shadow-themed-lg w-full max-w-sm p-6 border">
             <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Supprimer le projet ?</h2>
             <p className="text-sm themed-secondary mb-5">
               <strong>{projetActif?.nom}</strong> et tous ses éléments seront supprimés. Action irréversible.
             </p>
             <div className="flex gap-2">
               <button onClick={async () => { await deleteProjet(projetActif.id); setConfirmDel(false) }}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg text-sm transition-all cursor-pointer">
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-all cursor-pointer">
                 Supprimer
               </button>
               <button onClick={() => setConfirmDel(false)}
-                className="flex-1 rounded-lg text-sm cursor-pointer themed-hover transition-all"
+                className="flex-1 rounded-xl text-sm cursor-pointer themed-hover transition-all"
                 style={{ background: 'var(--bg-badge)', color: 'var(--text-secondary)' }}>
                 Annuler
               </button>
@@ -284,7 +280,7 @@ export default function Layout() {
           </div>
         </div>
       )}
-      {showDrop && <div className="fixed inset-0 z-40" onClick={() => setShowDrop(false)} />}
+      {(showDrop || showUser) && <div className="fixed inset-0 z-40" onClick={() => { setShowDrop(false); setShowUser(false) }} />}
     </div>
   )
 }
